@@ -6,95 +6,7 @@
   <title>Mi Cuenta – Luber</title>
   <link rel="stylesheet" href="/css/customer.css"/>
   <style>
-    .chat-close {
-      float: right;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 10px;
-      color: #fff;
-      transition: transform 0.2s ease;
-    }
-    .chat-close:hover {
-      transform: scale(1.2);
-    }
-    /* Botón de cancelar cita */
-    .cancel-btn {
-      background-color: #e74c3c;
-      color: #fff;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      margin-top: 8px;
-      transition: background-color 0.2s, transform 0.1s;
-    }
-    .cancel-btn:hover {
-      background-color: #c0392b;
-      transform: scale(1.02);
-    }
-    .cancel-btn:disabled {
-      background-color: #bdc3c7;
-      cursor: not-allowed;
-      transform: none;
-    }
-    /* Sección de cancelaciones */
-    .cancellations-container {
-      margin-top: 32px;
-      background: rgba(255,255,255,0.9);
-      padding: 24px;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    }
-    .cancellations-container h2 {
-      font-size: 1.5rem;
-      margin-bottom: 8px;
-    }
-    .show-archived-toggle {
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 1rem;
-    }
-    .show-archived-toggle input[type="checkbox"] {
-      transform: scale(1.2);
-      cursor: pointer;
-    }
-    .cancellation-card {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .cancellation-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 1rem;
-    }
-    .no-cancellations {
-      text-align: center;
-      font-size: 1.1rem;
-      color: #555;
-      margin-top: 12px;
-    }
-    .archive-toggle {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.9rem;
-    }
-    .archive-toggle input[type="checkbox"] {
-      transform: scale(1.2);
-      cursor: pointer;
-    }
+
   </style>
 </head>
 <body>
@@ -123,7 +35,6 @@
       <div id="vehiclesContainer" class="vehicle-grid"></div>
     </div>
 
-    <!-- Sección para ver cancelaciones -->
     <div class="cancellations-container">
       <h2>Mis Cancelaciones</h2>
       <div class="show-archived-toggle">
@@ -137,7 +48,6 @@
     </div>
   </div>
 
-  <!-- Chat flotante -->
   <div id="chat-widget">
     <div id="chat-header">
       Chat con Luber
@@ -150,7 +60,6 @@
     </form>
   </div>
 
-  <!-- Modal para imagen grande -->
   <div id="img-modal" class="modal">
     <span id="img-modal-close" class="modal-close">&times;</span>
     <img id="img-modal-full" class="modal-content"/>
@@ -158,7 +67,7 @@
 
   <script>
     const fetchOpts = { credentials: 'same-origin' };
-    let prevCount = 0, chatOpen = false, customerInfo = {};
+    let prevCount=0, chatOpen=false, customerInfo={};
 
     function linkify(text) {
       return text.replace(/(\bhttps?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank">${url}</a>`);
@@ -166,20 +75,10 @@
 
     async function loadProfile() {
       const res = await fetch('/api/customer-profile', fetchOpts);
-      if (!res.ok) return;
+      if(!res.ok) return;
       const d = await res.json();
-
-      if (d.accountType === 'Fleet') {
-        window.location.href = '/fleet.html';
-        return;
-      }
-
-      customerInfo = {
-        id:      d._id,
-        name:    d.fullName,
-        email:   d.email,
-        address: d.address
-      };
+      if(d.accountType==='Fleet') return window.location.href='/fleet.html';
+      customerInfo = { id:d._id, name:d.fullName, email:d.email, address:d.address };
 
       document.getElementById('fullName').textContent    = d.fullName;
       document.getElementById('accountType').textContent = d.accountType;
@@ -187,24 +86,19 @@
       document.getElementById('phone').textContent       = d.phone;
       document.getElementById('officePhone').textContent = d.officePhone;
       document.getElementById('email').textContent       = d.email;
-      document.getElementById('profilePic').src          = d.profilePictureUrl || '/images/default-profile.png';
+      document.getElementById('profilePic').src          = d.profilePictureUrl||'/images/default-profile.png';
 
-      // Cargar citas
-      const schRes = await fetch(`/api/schedule?userId=${d._id}`, fetchOpts);
+      const schRes    = await fetch(`/api/schedule?userId=${d._id}`, fetchOpts);
       const schedules = schRes.ok ? await schRes.json() : [];
 
-      const denied = schedules.find(s =>
-        s.reason && s.reason.trim().toLowerCase() !== 'awaiting reason'
-      );
-      const reasonEl = document.getElementById('deniedReason');
-      if (denied) {
-        reasonEl.innerHTML = `❌ Tu servicio fue rechazado por la siguiente razón:<br><em>${denied.reason}</em>`;
-      } else {
-        reasonEl.innerHTML = '';
-      }
+      // Motivo de rechazo
+      const denied = schedules.find(s=>s.reason && s.reason.trim().toLowerCase()!=='awaiting reason');
+      document.getElementById('deniedReason').innerHTML = denied
+        ? `❌ Tu servicio fue rechazado por:<br><em>${denied.reason}</em>`
+        : '';
 
       renderVehicles(d.vehicles, schedules);
-      renderCancellations(d.cancellations || []);
+      renderCancellations(d.cancellations||[]);
       updateTimestamp();
       setupScheduleButton();
     }
@@ -212,270 +106,179 @@
     function renderVehicles(vehicles, schedules) {
       const grid = document.getElementById('vehiclesContainer');
       grid.innerHTML = '';
-      vehicles.forEach(v => {
-        const related = schedules.filter(s =>
-          s.vehicles.some(item => String(item.vehicleId) === String(v._id))
+      vehicles.forEach(v=>{
+        const related = schedules.filter(s=>
+          s.vehicles.some(it=>String(it.vehicleId)===String(v._id))
         );
-        const next = related.sort((a,b) => {
-          const [timeA, suffixA] = a.time.split(' ');
-          const [hA, mA] = timeA.split(':').map(Number);
-          let hourA = (suffixA === 'PM' && hA < 12) ? hA + 12 : (suffixA === 'AM' && hA === 12 ? 0 : hA);
-          const dateA = new Date(a.date);
-          dateA.setHours(hourA, mA, 0, 0);
-
-          const [timeB, suffixB] = b.time.split(' ');
-          const [hB, mB] = timeB.split(':').map(Number);
-          let hourB = (suffixB === 'PM' && hB < 12) ? hB + 12 : (suffixB === 'AM' && hB === 12 ? 0 : hB);
-          const dateB = new Date(b.date);
-          dateB.setHours(hourB, mB, 0, 0);
-
-          return dateA - dateB;
-        })[0];
-
+        const next = related.sort((a,b)=> toTs(a)-toTs(b) )[0];
+        function toTs(s){
+          let [time,suf] = s.time.split(' ');
+          let [h,m] = time.split(':').map(Number);
+          if(suf==='PM'&&h<12)h+=12;
+          if(suf==='AM'&&h===12)h=0;
+          let d=new Date(s.date); d.setHours(h,m,0,0);
+          return d.getTime();
+        }
         const dateText = next
           ? `${new Date(next.date).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'})} a las ${next.time}`
           : 'Sin cita';
-
-        const deniedIcon = next?.reason && next.reason.trim().toLowerCase() !== 'awaiting reason'
-          ? '<span class="denied-icon"></span>' : '';
-
         const icons = next
-          ? `${next.processed ? '<span class="processed-icon"></span>' : ''}
-             ${next.confirmed ? '<span class="approved-icon"></span>' : ''}
-             ${deniedIcon}`
-          : '';
-
-        const note = `<div class="vehicle-note">
-                        ${icons}
-                        Próxima cita: ${dateText}
-                      </div>`;
-
+          ? `${next.processed?'<span class="processed-icon"></span>':''}
+             ${next.confirmed?'<span class="approved-icon"></span>':''}` : '';
+        const note = `<div class="vehicle-note">${icons} Próxima cita: ${dateText}</div>`;
         const card = document.createElement('div');
-        card.className = 'vehicle';
-        card.innerHTML = `
-        ${v.vehicleImageUrl
-          ? `<img src="${v.vehicleImageUrl}" alt="Vehículo"/>`
-          : `<div style="height:140px;background:#ddd;"></div>`}
-        <div class="vehicle-details">
-          <div><strong>Marca:</strong> ${v.brand}</div>
-          <div><strong>Año:</strong> ${v.year}</div>
-          <div><strong>Modelo:</strong> ${v.model}</div>
-          <div><strong>Motor:</strong> ${v.engine}</div>
-          <div><strong>Color:</strong> ${v.color}</div>
-          <div><strong>Placa:</strong> ${v.plateLast3}</div>
-          ${v.vinImageUrl
-            ? `<img src="${v.vinImageUrl}" alt="VIN" style="margin:8px 0;border-radius:4px;max-width:100%;"/>`
-            : ''}
-          <div><strong>VIN:</strong> ${v.vin || '—'}</div>
-        </div>
-        <div class="vehicle-interval">Intervalo: ${v.interval} km/días</div>
-        ${note}
-      `;
-
-        if (next) {
-          const apptDateObj = new Date(next.date + 'T00:00:00');
-          const todayObj = new Date();
-          todayObj.setHours(0, 0, 0, 0);
-          const diffMs = apptDateObj - todayObj;
-          const diffDays = diffMs / (1000 * 60 * 60 * 24);
-          if (diffDays >= 1) {
+        card.className='vehicle';
+        card.innerHTML=`
+          ${v.vehicleImageUrl
+            ? `<img src="${v.vehicleImageUrl}" alt="Vehículo"/>`
+            : `<div style="height:140px;background:#ddd;"></div>`}
+          <div class="vehicle-details">
+            <div><strong>Marca:</strong> ${v.brand}</div>
+            <div><strong>Año:</strong> ${v.year}</div>
+            <div><strong>Modelo:</strong> ${v.model}</div>
+            <div><strong>Motor:</strong> ${v.engine}</div>
+            <div><strong>Color:</strong> ${v.color}</div>
+            <div><strong>Placa:</strong> ${v.plateLast3}</div>
+            <div><strong>VIN:</strong> ${v.vin||'—'}</div>
+          </div>
+          <div class="vehicle-interval">Intervalo: ${v.interval} km/días</div>
+          ${note}
+        `;
+        if(next){
+          let dObj=new Date(next.date+'T00:00:00'),
+              t0= new Date(); t0.setHours(0,0,0,0),
+              days=(dObj-t0)/(1000*60*60*24);
+          if(days>=1){
             const btn = document.createElement('button');
-            btn.className = 'cancel-btn';
-            btn.textContent = 'Cancelar Cita';
-            btn.dataset.id = next._id;
-            btn.onclick = handleCancel;
+            btn.className='cancel-btn';
+            btn.textContent='Cancelar Cita';
+            btn.dataset.id=next._id;
+            btn.onclick=handleCancel;
             card.appendChild(btn);
           }
         }
-
         grid.appendChild(card);
       });
     }
 
-    function renderCancellations(cancellations) {
-      const container = document.getElementById('cancellationsContainer');
-      const noMsg = document.getElementById('noCancellationsMsg');
-      container.innerHTML = '';
+    function renderCancellations(cancellations){
+      const cont=document.getElementById('cancellationsContainer'),
+            noM =document.getElementById('noCancellationsMsg'),
+            showA =document.getElementById('showArchivedCheckbox').checked;
+      cont.innerHTML='';
+      const list=cancellations.filter(c=> showA?c.archived:!c.archived );
+      if(!list.length){ noM.style.display='block'; return }
+      noM.style.display='none';
+      list.sort((a,b)=>new Date(b.date)-new Date(a.date))
+          .forEach(e=>{
+            const card=document.createElement('div');
+            card.className='cancellation-card';
+            const fecha=new Date(e.date).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+            card.innerHTML=`
+              <div class="cancellation-info">
+                <div><strong>Fecha:</strong> ${fecha}</div>
+                <div><strong>Servicio:</strong> ${e.serviceName}</div>
+                <div><strong>Veh:</strong> ${e.vehicleInfo.brand} ${e.vehicleInfo.model} (${e.vehicleInfo.plateLast3})</div>
+              </div>`;
+            const tog=document.createElement('div');
+            tog.className='archive-toggle';
+            const cb=document.createElement('input');
+            cb.type='checkbox'; cb.checked=e.archived; cb.dataset.date=e.date;
+            cb.onclick=()=>handleArchiveToggle(e.date);
+            tog.appendChild(cb);
+            tog.appendChild(Object.assign(document.createElement('label'),{textContent:'Archivada'}));
+            card.appendChild(tog);
+            cont.appendChild(card);
+          });
+    }
 
-      const showArchived = document.getElementById('showArchivedCheckbox').checked;
-      // Filtrar según archived
-      const filtered = cancellations.filter(c => showArchived ? c.archived : !c.archived);
-
-      if (!filtered || filtered.length === 0) {
-        noMsg.style.display = 'block';
-        return;
-      }
-      noMsg.style.display = 'none';
-
-      filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      filtered.forEach(entry => {
-        const card = document.createElement('div');
-        card.className = 'cancellation-card';
-
-        const info = document.createElement('div');
-        info.className = 'cancellation-info';
-
-        const fechaTexto = new Date(entry.date).toLocaleDateString('es-ES', {
-          day: '2-digit', month: '2-digit', year: 'numeric'
-        });
-        info.innerHTML = `
-          <div><strong>Fecha de cancelación:</strong> ${fechaTexto}</div>
-          <div><strong>Servicio:</strong> ${entry.serviceName}</div>
-          <div><strong>Vehículo:</strong> ${entry.vehicleInfo.brand} ${entry.vehicleInfo.model} (${entry.vehicleInfo.plateLast3})</div>
-        `;
-
-        const toggleDiv = document.createElement('div');
-        toggleDiv.className = 'archive-toggle';
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = entry.archived;
-        checkbox.dataset.date = entry.date;
-        checkbox.onclick = () => handleArchiveToggle(entry.date);
-        const label = document.createElement('label');
-        label.textContent = 'Archivada';
-        toggleDiv.appendChild(checkbox);
-        toggleDiv.appendChild(label);
-
-        card.appendChild(info);
-        card.appendChild(toggleDiv);
-        container.appendChild(card);
+    async function handleCancel(ev){
+      const id=ev.currentTarget.dataset.id;
+      if(!confirm('Cancelar cita (24h antes mínimo)?'))return;
+      const res=await fetch(`/api/schedule/${id}`,{method:'DELETE',...fetchOpts});
+      if(!res.ok)return alert('Error: '+await res.text());
+      await loadProfile();
+    }
+    async function handleArchiveToggle(dateStr){
+      const res=await fetch('/api/customer-cancellation-archive',{
+        method:'PUT',...fetchOpts,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({date:dateStr})
       });
+      if(!res.ok)return alert('Error: '+await res.text());
+      await loadProfile();
     }
 
-    async function handleCancel(e) {
-      const scheduleId = e.currentTarget.dataset.id;
-      if (!scheduleId) return;
-      const confirmar = confirm('¿Seguro que deseas cancelar esta cita? Debes hacerlo al menos con un día de anticipación.');
-      if (!confirmar) return;
-      try {
-        const res = await fetch(`/api/schedule/${scheduleId}`, {
-          method: 'DELETE',
-          ...fetchOpts
-        });
-        if (!res.ok) {
-          const errText = await res.text();
-          alert('Error al cancelar: ' + errText);
-          return;
-        }
-        await loadProfile();
-      } catch (err) {
-        console.error('Error cancelando cita:', err);
-        alert('Ocurrió un error cancelando la cita.');
-      }
+    function updateTimestamp(){
+      document.getElementById('lastUpdated').textContent=
+        'Última actualización: '+new Date().toLocaleTimeString();
     }
-
-    async function handleArchiveToggle(dateStr) {
-      try {
-        const res = await fetch(`/api/customer-cancellation-archive`, {
-          method: 'PUT',
-          ...fetchOpts,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ date: dateStr })
-        });
-        if (!res.ok) {
-          const errText = await res.text();
-          alert('Error al actualizar archivado: ' + errText);
-          return;
-        }
-        await loadProfile();
-      } catch (err) {
-        console.error('Error archivando/unarchivando:', err);
-        alert('Ocurrió un error al actualizar archivado.');
-      }
-    }
-
-    function updateTimestamp() {
-      const now = new Date();
-      document.getElementById('lastUpdated').textContent =
-        `Última actualización: ${now.toLocaleTimeString()}`;
-    }
-
-    function setupScheduleButton() {
-      document.getElementById('schedule-btn').onclick = () => {
-        const qs = new URLSearchParams({
-          clientId: customerInfo.id,
-          name:     customerInfo.name,
-          email:    customerInfo.email,
-          address:  customerInfo.address
-        }).toString();
-        window.location.href = `/schedule.html?${qs}`;
+    function setupScheduleButton(){
+      document.getElementById('schedule-btn').onclick=()=>{
+        const qs=new URLSearchParams(customerInfo).toString();
+        window.location.href='/schedule.html?'+qs;
       };
     }
 
-    async function loadChat() {
-      const res = await fetch('/api/chat/history', fetchOpts);
-      if (!res.ok) return;
-      const msgs = await res.json();
-      const body = document.getElementById('chat-body');
-      body.innerHTML = '';
-      msgs.forEach(m => {
-        const d = document.createElement('div');
-        d.className = 'msg ' + m.sender;
-        if (m.text) d.innerHTML = linkify(m.text);
-        if (m.imageUrl) {
-          const img = document.createElement('img');
-          img.src = m.imageUrl;
-          img.className = 'chat-thumb';
-          img.onclick = () => openModal(m.imageUrl);
+    async function loadChat(){
+      const res=await fetch('/api/chat/history',fetchOpts);
+      if(!res.ok)return;
+      const msgs=await res.json(), body=document.getElementById('chat-body');
+      body.innerHTML='';
+      msgs.forEach(m=>{
+        const d=document.createElement('div');
+        d.className='msg '+m.sender;
+        if(m.text) d.innerHTML=linkify(m.text);
+        if(m.imageUrl){
+          const img=document.createElement('img');
+          img.src=m.imageUrl; img.onclick=()=>openModal(m.imageUrl);
           d.appendChild(img);
         }
         body.appendChild(d);
       });
-      body.scrollTop = body.scrollHeight;
-      if (msgs.length > prevCount && !chatOpen) {
+      body.scrollTop=body.scrollHeight;
+      if(msgs.length>prevCount && !chatOpen)
         document.getElementById('chat-widget').classList.add('unread');
-      }
-      prevCount = msgs.length;
+      prevCount=msgs.length;
     }
 
-    document.getElementById('showArchivedCheckbox').addEventListener('change', () => {
-      // Volver a renderizar cancelaciones al alternar
-      fetch('/api/customer-profile', fetchOpts)
-        .then(res => res.json())
-        .then(data => renderCancellations(data.cancellations || []))
-        .catch(() => {});
-    });
-
-    document.getElementById('chat-header').onclick = () => {
-      chatOpen = !chatOpen;
-      document.getElementById('chat-widget').classList.toggle('open', chatOpen);
-      if (chatOpen) document.getElementById('chat-widget').classList.remove('unread');
+    document.getElementById('showArchivedCheckbox').onchange = ()=>renderCancellations(JSON.parse(localStorage.getItem('lastCancellations')||'[]'));
+    document.getElementById('chat-header').onclick = ()=>{
+      chatOpen=!chatOpen;
+      document.getElementById('chat-widget').classList.toggle('open',chatOpen);
+      if(chatOpen)document.getElementById('chat-widget').classList.remove('unread');
     };
-
-    document.getElementById('chat-close').onclick = (e) => {
-      e.stopPropagation();
-      chatOpen = false;
+    document.getElementById('chat-close').onclick = e=>{
+      e.stopPropagation(); chatOpen=false;
       document.getElementById('chat-widget').classList.remove('open');
     };
-
-    document.getElementById('chat-form').onsubmit = async e => {
+    document.getElementById('chat-form').onsubmit=async e=>{
       e.preventDefault();
-      const text = document.getElementById('chat-input').value.trim();
-      if (!text) return;
-      await fetch('/api/chat/send', {
-        ...fetchOpts,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
-      document.getElementById('chat-input').value = '';
+      const txt=document.getElementById('chat-input').value.trim();
+      if(!txt)return;
+      await fetch('/api/chat/send',{...fetchOpts,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:txt})});
+      document.getElementById('chat-input').value='';
       loadChat();
     };
-
-    document.getElementById('img-modal-close').onclick = () =>
-      document.getElementById('img-modal').style.display = 'none';
-
-    function openModal(src) {
-      document.getElementById('img-modal-full').src = src;
-      document.getElementById('img-modal').style.display = 'flex';
+    document.getElementById('img-modal-close').onclick = ()=>document.getElementById('img-modal').style.display='none';
+    function openModal(src){ 
+      const m=document.getElementById('img-modal');
+      document.getElementById('img-modal-full').src=src; m.style.display='flex';
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      loadProfile();
-      setInterval(loadProfile, 15000);
+    window.addEventListener('DOMContentLoaded',()=>{
+      loadProfile().then(()=>{
+        // Para permitir toggle archivadas guardamos localmente
+        fetch('/api/customer-profile',fetchOpts)
+          .then(r=>r.json())
+          .then(d=>localStorage.setItem('lastCancellations',JSON.stringify(d.cancellations||[])));
+      });
+      setInterval(async ()=>{
+        await loadProfile();
+        await loadChat();
+      },15000);
       loadChat();
-      setInterval(loadChat, 5000);
+      setInterval(loadChat,5000);
     });
   </script>
 </body>

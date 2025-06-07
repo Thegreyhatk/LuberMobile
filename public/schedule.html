@@ -33,6 +33,7 @@
       </table>
       <div style="text-align: right; margin-top: 8px;">
         <button id="copy-all-btn" style="font-size: 0.9rem;">📍 Copiar dirección a todos</button>
+        <button id="my-location-btn" style="font-size: 0.9rem; margin-left:8px;">📍 My Location</button>
       </div>
     </div>
 
@@ -63,7 +64,6 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       try {
-        // Obtener perfil de cliente
         const prof = await fetch('/api/customer-profile', fetchOpts);
         if (!prof.ok) throw 'No autorizado';
         const d = await prof.json();
@@ -72,9 +72,8 @@
 
         // Ajustar enlace de "Mi Cuenta"
         document.querySelector('nav a').href =
-          accountType === 'Fleet' ? 'fleets.html' : 'customer.html';
+          accountType === 'Fleet' ? 'Fleet.html' : 'customer.html';
 
-        // Obtener vehículos, servicios y citas existentes
         const [vehRes, svcRes, schRes] = await Promise.all([
           fetch('/api/vehicles', fetchOpts),
           fetch('/api/services', fetchOpts),
@@ -89,6 +88,24 @@
       } catch (e) {
         showMsg(e, 'error');
       }
+
+      // Botón My Location
+      document.getElementById('my-location-btn').addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          showMsg('Tu navegador no soporta Geolocalización', 'error');
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(pos => {
+          const { latitude, longitude } = pos.coords;
+          const coordStr = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+          document.querySelectorAll('input[name^="addr_"]').forEach(input => {
+            input.value = coordStr;
+          });
+          showMsg('¡Ubicación actual copiada a todos los vehículos!', 'success');
+        }, err => {
+          showMsg('Error obteniendo ubicación: ' + err.message, 'error');
+        });
+      });
     });
 
     function idOf(item) {
@@ -97,15 +114,12 @@
 
     function generateSlots() {
       const slots = [];
-      // Franjas cada 15 minutos de 9:00 AM a 9:00 PM
       for (let h = 9; h <= 21; h++) {
-        for (let m of [0, 15, 30, 45]) {
-          if (h === 21 && m > 0) continue;
-          let hr12 = h === 0 ? 12 : (h > 12 ? h - 12 : h);
-          const suf = h < 12 ? 'AM' : 'PM';
-          const mm = m.toString().padStart(2, '0');
-          const hh = hr12.toString().padStart(2, '0');
-          slots.push(`${hh}:${mm} ${suf}`);
+        for (let m of [0,15,30,45]) {
+          if (h===21 && m>0) continue;
+          let hr12 = h===0?12:(h>12?h-12:h);
+          const suf = h<12?'AM':'PM';
+          slots.push(`${String(hr12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${suf}`);
         }
       }
       return slots;
@@ -113,12 +127,12 @@
 
     function minDate() {
       const d = new Date();
-      let cnt = 0;
-      while (cnt < 3) {
-        d.setDate(d.getDate() + 1);
-        if (![0, 6].includes(d.getDay())) cnt++;
+      let cnt=0;
+      while(cnt<3) {
+        d.setDate(d.getDate()+1);
+        if (![0,6].includes(d.getDay())) cnt++;
       }
-      return d.toISOString().slice(0, 10);
+      return d.toISOString().slice(0,10);
     }
 
     function renderTable(vehicles, services, schedules) {
@@ -138,82 +152,49 @@
           ? `<img src="${v.vehicleImageUrl}" class="veh-thumb" data-full="${v.vehicleImageUrl}"/>`
           : `<div style="width:60px;height:60px;background:#ccc;border-radius:4px;"></div>`;
 
-        // Buscar si existe una cita activa para este vehículo
         const existing = schedules.find(s =>
-          s.vehicles.some(vv => String(vv.vehicleId) === vid)
+          s.vehicles.some(vv => String(vv.vehicleId)===vid)
         );
 
         const tr = document.createElement('tr');
         tr.dataset.vid = vid;
 
         if (existing) {
-          // Mostrar datos de la cita existente y deshabilitar inputs
-          const vehEntry = existing.vehicles.find(vv => String(vv.vehicleId) === vid);
-          const svcObj = services.find(x => idOf(x) === String(vehEntry.serviceId));
-          const svcName = svcObj ? svcObj.name : '—';
+          const vehEntry = existing.vehicles.find(vv=>String(vv.vehicleId)===vid);
+          const svcObj = services.find(x=>idOf(x)===String(vehEntry.serviceId));
+          const svcName = svcObj?svcObj.name:'—';
           const oilType = vehEntry.oilType;
           const price = vehEntry.price.toFixed(2);
-          const airChecked = vehEntry.airFilter ? 'checked' : '';
-          const cabinChecked = vehEntry.cabinFilter ? 'checked' : '';
-          const addressVal = vehEntry.serviceAddress || fleetInfo.address;
+          const airChecked = vehEntry.airFilter?'checked':'';
+          const cabinChecked = vehEntry.cabinFilter?'checked':'';
+          const addrVal = vehEntry.serviceAddress||fleetInfo.address;
 
           tr.innerHTML = `
             <td>${thumb}</td>
-            <td>
-              <input type="date" value="${existing.date}" disabled/>
-            </td>
-            <td>
-              <select disabled>
-                <option>${existing.time}</option>
-              </select>
-            </td>
-            <td>
-              <select disabled style="min-width:140px;">
-                <option>${svcName}</option>
-              </select>
-            </td>
-            <td>
-              <select disabled>
-                <option>${oilType}</option>
-              </select>
-            </td>
+            <td><input type="date" value="${existing.date}" disabled/></td>
+            <td><select disabled><option>${existing.time}</option></select></td>
+            <td><select disabled style="min-width:140px;"><option>${svcName}</option></select></td>
+            <td><select disabled><option>${oilType}</option></select></td>
             <td class="price-cell">$<span>${price}</span></td>
             <td>
               <label><input type="checkbox" disabled ${airChecked}/> Motor ($25)</label>
               <label><input type="checkbox" disabled ${cabinChecked}/> Cabina ($20)</label>
             </td>
-            <td>
-              <input type="text" value="${addressVal}" disabled style="width:200px;"/>
-            </td>
+            <td><input type="text" value="${addrVal}" disabled style="width:200px;"/></td>
           `;
         } else {
-          // No hay cita existente; permitir creación
           tr.innerHTML = `
             <td>${thumb}</td>
-            <td>
-              <input type="date" name="date_${vid}" form="schedule-form" min="${minDate()}"/>
-            </td>
-            <td>
-              <select name="time_${vid}" form="schedule-form" disabled>
-                <option>Elige fecha primero</option>
-              </select>
-            </td>
-            <td>
-              <select name="service_${vid}" form="schedule-form" style="min-width: 140px;">
-                <option value="">-- Servicio --</option>${svcHtml}
-              </select>
-            </td>
-            <td>
-              <select name="oil_${vid}" form="schedule-form">${oilHtml}</select>
-            </td>
+            <td><input type="date" name="date_${vid}" form="schedule-form" min="${minDate()}"/></td>
+            <td><select name="time_${vid}" form="schedule-form" disabled><option>Elige fecha primero</option></select></td>
+            <td><select name="service_${vid}" form="schedule-form" style="min-width:140px;"><option value="">-- Servicio --</option>${svcHtml}</select></td>
+            <td><select name="oil_${vid}" form="schedule-form">${oilHtml}</select></td>
             <td class="price-cell">$<span>0.00</span></td>
             <td>
               <label><input type="checkbox" name="air_${vid}" form="schedule-form"/> Motor ($25)</label>
               <label><input type="checkbox" name="cabin_${vid}" form="schedule-form"/> Cabina ($20)</label>
             </td>
-            <td>
-              <input type="text" name="addr_${vid}" form="schedule-form" placeholder="Dirección del vehículo" style="width: 200px;"/>
-            </td>
+            <td><input type="text" name="addr_${vid}" form="schedule-form" placeholder="Dirección del vehículo" style="width:200px;"/></td>
           `;
 
           const dateInput = tr.querySelector(`input[name="date_${vid}"]`);
@@ -226,38 +207,33 @@
 
           dateInput.addEventListener('change', () => {
             let slots = generateSlots();
-            const today = new Date().toISOString().slice(0, 10);
-            if (dateInput.value === today) {
-              const now = new Date();
-              const nowH = now.getHours();
-              const nowM = now.getMinutes();
-              slots = slots.filter(s => {
-                const [timePart, suffix] = s.split(' ');
-                const [hStr, mStr] = timePart.split(':');
-                let hr = parseInt(hStr, 10);
-                const mn = parseInt(mStr, 10);
-                if (suffix === 'PM' && hr !== 12) hr += 12;
-                if (suffix === 'AM' && hr === 12) hr = 0;
-                return hr > nowH || (hr === nowH && mn > nowM);
+            const today = new Date().toISOString().slice(0,10);
+            if (dateInput.value===today) {
+              const now=new Date(), h=now.getHours(), m=now.getMinutes();
+              slots=slots.filter(s=>{
+                let [t,sf]=s.split(' '), [hh,mm]=t.split(':').map(Number);
+                if (sf==='PM'&&hh!==12) hh+=12;
+                if (sf==='AM'&&hh===12) hh=0;
+                return hh>h || (hh===h&&mm>m);
               });
             }
-            timeSelect.innerHTML = slots.map(s => `<option>${s}</option>`).join('');
-            timeSelect.disabled = false;
+            timeSelect.innerHTML = slots.map(s=>`<option>${s}</option>`).join('');
+            timeSelect.disabled=false;
           });
 
           const updatePrice = () => {
-            const svc = services.find(x => idOf(x) === svcSelect.value);
-            if (!svc || !oilSelect.value) {
-              priceSpan.textContent = '0.00';
+            const svc = services.find(x=>idOf(x)===svcSelect.value);
+            if (!svc||!oilSelect.value) {
+              priceSpan.textContent='0.00';
               recalcTotal();
               return;
             }
-            const from = svc.priceRange?.from || svc.priceFrom;
-            const to = svc.priceRange?.to || svc.priceTo;
-            let price = oilSelect.value === 'Blend' ? from : to;
-            if (airBox.checked) price += 25;
-            if (cabinBox.checked) price += 20;
-            priceSpan.textContent = price.toFixed(2);
+            const from=svc.priceRange?.from||svc.priceFrom;
+            const to  =svc.priceRange?.to  ||svc.priceTo;
+            let price = oilSelect.value==='Blend'?from:to;
+            if(airBox.checked)price+=25;
+            if(cabinBox.checked)price+=20;
+            priceSpan.textContent=price.toFixed(2);
             recalcTotal();
           };
 
@@ -268,112 +244,92 @@
         }
 
         tbody.appendChild(tr);
-
-        // Mostrar modal al hacer clic en imagen
-        tr.querySelector('.veh-thumb')?.addEventListener('click', e => {
-          document.getElementById('veh-modal-img').src = e.target.dataset.full;
-          document.getElementById('veh-modal').style.display = 'flex';
+        tr.querySelector('.veh-thumb')?.addEventListener('click', e=>{
+          document.getElementById('veh-modal-img').src=e.target.dataset.full;
+          document.getElementById('veh-modal').style.display='flex';
         });
       });
 
       recalcTotal();
-
-      document.getElementById('copy-all-btn').addEventListener('click', () => {
-        const firstInput = document.querySelector('input[name^="addr_"]');
-        if (!firstInput) return;
-        const val = firstInput.value;
-        document.querySelectorAll('input[name^="addr_"]').forEach(input => {
-          input.value = val;
-        });
+      document.getElementById('copy-all-btn').addEventListener('click', ()=>{
+        const first=document.querySelector('input[name^="addr_"]');
+        if(!first) return;
+        const val=first.value;
+        document.querySelectorAll('input[name^="addr_"]').forEach(i=>i.value=val);
       });
     }
 
     function recalcTotal() {
-      let sum = 0;
+      let sum=0;
       document.querySelectorAll('.vehicles-table .price-cell span')
-        .forEach(el => sum += parseFloat(el.textContent) || 0);
-      document.getElementById('total-price').textContent = sum.toFixed(2);
+        .forEach(el=>sum+=parseFloat(el.textContent)||0);
+      document.getElementById('total-price').textContent=sum.toFixed(2);
     }
 
     document.getElementById('submit-btn').addEventListener('click', async () => {
       const vehiclesPayload = [];
-      let commonDate = '', commonTime = '';
+      let commonDate='', commonTime='';
 
-      document.querySelectorAll('#vehicles-tbody tr').forEach(tr => {
-        if (tr.querySelector('input[disabled]')) {
-          // Fila con cita existente: saltar
-          return;
-        }
+      document.querySelectorAll('#vehicles-tbody tr').forEach(tr=>{
+        if(tr.querySelector('input[disabled]')) return;
         const vid = tr.dataset.vid;
         const date = tr.querySelector(`[name="date_${vid}"]`).value;
         const time = tr.querySelector(`[name="time_${vid}"]`).value;
-        const svc = tr.querySelector(`[name="service_${vid}"]`).value;
-        const oil = tr.querySelector(`[name="oil_${vid}"]`).value;
-        const air = tr.querySelector(`[name="air_${vid}"]`).checked;
-        const cabin = tr.querySelector(`[name="cabin_${vid}"]`).checked;
-        const address = tr.querySelector(`[name="addr_${vid}"]`).value.trim();
-        const price = parseFloat(tr.querySelector('.price-cell span').textContent) || 0;
-
-        if (date && time && svc && oil) {
-          const veh = __VEHICLES__.find(x => idOf(x) === vid);
+        const svc  = tr.querySelector(`[name="service_${vid}"]`).value;
+        const oil  = tr.querySelector(`[name="oil_${vid}"]`).value;
+        const air  = tr.querySelector(`[name="air_${vid}"]`).checked;
+        const cabin= tr.querySelector(`[name="cabin_${vid}"]`).checked;
+        const addr = tr.querySelector(`[name="addr_${vid}"]`).value.trim();
+        const price = parseFloat(tr.querySelector('.price-cell span').textContent)||0;
+        if(date&&time&&svc&&oil) {
+          const veh=__VEHICLES__.find(x=>idOf(x)===vid);
           vehiclesPayload.push({
-            vehicleId: vid,
-            serviceId: svc,
-            oilType: oil,
-            airFilter: air,
-            cabinFilter: cabin,
-            serviceAddress: address || fleetInfo.address,
-            vehicleInfo: {
-              brand: veh.brand,
-              model: veh.model,
-              plateLast3: veh.plateLast3,
-              vehicleImageUrl: veh.vehicleImageUrl || '',
-              vinImageUrl: veh.vinImageUrl || ''
+            vehicleId:vid, serviceId:svc, oilType:oil,
+            airFilter:air, cabinFilter:cabin,
+            serviceAddress:addr||fleetInfo.address,
+            vehicleInfo:{
+              brand:veh.brand, model:veh.model,
+              plateLast3:veh.plateLast3,
+              vehicleImageUrl:veh.vehicleImageUrl||'',
+              vinImageUrl:veh.vinImageUrl||''
             },
             price
           });
-          commonDate = date;
-          commonTime = time;
+          commonDate=date; commonTime=time;
         }
       });
 
-      if (!vehiclesPayload.length) {
-        showMsg('Selecciona al menos una cita completa en vehículos sin cita previa.', 'error');
+      if(!vehiclesPayload.length){
+        showMsg('Selecciona al menos una cita completa en vehículos sin cita previa.','error');
         return;
       }
 
-      const payload = {
-        date: commonDate,
-        time: commonTime,
-        clientAddress: fleetInfo.address,
-        total: parseFloat(document.getElementById('total-price').textContent) || 0,
-        vehicles: vehiclesPayload
+      const payload={ date:commonDate, time:commonTime,
+        clientAddress:fleetInfo.address,
+        total:parseFloat(document.getElementById('total-price').textContent)||0,
+        vehicles:vehiclesPayload
       };
 
       try {
-        const res = await fetch('/api/schedule', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res=await fetch('/api/schedule',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
           ...fetchOpts,
-          body: JSON.stringify(payload)
+          body:JSON.stringify(payload)
         });
-        if (!res.ok) throw await res.text();
-
-        showMsg('Cita creada correctamente', 'success');
-        setTimeout(() => {
-          const next = accountType === 'Fleet'
-            ? 'fleets.html'
-            : 'customer.html';
-          location.href = next;
-        }, 1500);
-      } catch (err) {
+        if(!res.ok) throw await res.text();
+        showMsg('Cita creada correctamente','success');
+        setTimeout(()=>{
+          location.href = accountType==='Fleet'?'Fleet.html':'customer.html';
+        },1500);
+      } catch(err){
         console.error(err);
-        showMsg('Error al agendar: ' + err, 'error');
+        showMsg('Error al agendar: '+err,'error');
       }
     });
 
     document.getElementById('veh-modal').addEventListener('click', () => {
-      document.getElementById('veh-modal').style.display = 'none';
+      document.getElementById('veh-modal').style.display='none';
     });
   </script>
 </body>

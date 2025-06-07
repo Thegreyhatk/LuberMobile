@@ -635,6 +635,7 @@ button:hover {
     addVehicleBtn.onclick = addVehicleBlock;
 
     // Registro
+// Registro
     formReg.onsubmit = async e => {
       e.preventDefault();
       const fd = new FormData(formReg);
@@ -643,9 +644,15 @@ button:hover {
         const err = await res.json();
         return alert('Error al registrar: ' + (err.error || res.statusText));
       }
-      const data = await res.json();
-      window.location.href = '/customer.html';
+      const { accountType } = await res.json();
+      // ← redirige según tipo de cuenta
+      if (accountType === 'Fleet') {
+        window.location.href = '/fleet.html';
+      } else {
+        window.location.href = '/customer.html';
+      }
     };
+
 
     // Login
     formLog.onsubmit = async e => {
@@ -665,7 +672,7 @@ button:hover {
       }
       const { accountType } = await res.json();
       if (accountType === 'Fleet') {
-        window.location.href = '/fleets.html';
+        window.location.href = '/fleet.html';
       } else {
         window.location.href = '/customer.html';
       }
