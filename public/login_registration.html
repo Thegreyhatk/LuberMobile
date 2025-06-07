@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registro / Login – Luber</title>
+  <style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: url('images/background.png') no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Card principal */
+.form-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 500px;
+  overflow: hidden;
+}
+
+/* Logo */
+.logo-wrapper {
+  text-align: center;
+  padding: 20px 0 10px;
+}
+.logo-wrapper img {
+  max-width: 140px;
+  height: auto;
+}
+
+/* Tabs de navegación */
+.tabs {
+  display: flex;
+  background: #f0f0f0;
+  flex-wrap: wrap;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 14px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #555;
+  transition: background 0.3s, color 0.3s;
+}
+.tab.active {
+  background: #fff;
+  color: #222;
+  border-bottom: 2px solid #007bff;
+}
+
+/* Formularios */
+form {
+  display: none;
+  padding: 20px 30px;
+}
+form.active {
+  display: block;
+}
+.field {
+  margin-bottom: 16px;
+}
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: #333;
+}
+input,
+select,
+button {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+/* Botón principal */
+button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s;
+  font-size: 1rem;
+}
+button:hover {
+  background: #0056b3;
+}
+
+/* Sección de vehículos */
+.vehicles h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #007bff;
+}
+.vehicle {
+  position: relative;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+.remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  line-height: 24px;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* Botón agregar vehículo */
+#addVehicleBtn {
+  margin-top: 8px;
+  background: #28a745;
+}
+#addVehicleBtn:hover {
+  background: #1e7e34;
+}
+
+/* RESPONSIVE */
+@media (max-width: 480px) {
+  .form-container {
+    padding: 0;
+    border-radius: 8px;
+    max-width: 100%;
+  }
+  .tabs {
+    flex-direction: column;
+  }
+  .tab {
+    padding: 12px;
+    font-size: 1rem;
+  }
+  form {
+    padding: 16px 20px;
+  }
+  label {
+    font-size: 0.95rem;
+  }
+  input,
+  select,
+  button {
+    font-size: 1rem;
+    padding: 9px;
+  }
+  button {
+    font-size: 1rem;
+  }
+  .remove-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+    line-height: 22px;
+  }
+  .vehicles h3 {
+    font-size: 1.2rem;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <div class="logo-wrapper">
+      <img src="images/logo.png" alt="Luber Logo">
+    </div>
+
+    <div class="tabs">
+      <div id="tab-register" class="tab active">Registro</div>
+      <div id="tab-login" class="tab">Login</div>
+    </div>
+
+    <!-- Registro -->
+    <form id="form-register" class="active" enctype="multipart/form-data">
+      <div class="field">
+        <label for="accountType">Tipo de cuenta</label>
+        <select id="accountType" name="accountType" required>
+          <option value="Customer">Customer</option>
+          <option value="Fleet">Fleet Account</option>
+        </select>
+      </div>
+      <div class="field"><label for="fullName">Nombre completo</label><input id="fullName" name="fullName" type="text" required/></div>
+      <div class="field"><label for="address">Dirección</label><input id="address" name="address" type="text" required/></div>
+      <div class="field"><label for="phone">Teléfono</label><input id="phone" name="phone" type="tel" required/></div>
+      <div class="field"><label for="officePhone">Teléfono de oficina</label><input id="officePhone" name="officePhone" type="tel"/></div>
+      <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required/></div>
+      <div class="field"><label for="password">Contraseña</label><input id="password" name="password" type="password" required/></div>
+      <div class="field">
+        <label for="profilePicture">Foto de perfil / Logo</label>
+        <input id="profilePicture" name="profilePicture" type="file" accept="image/*" required/>
+      </div>
+      <div class="vehicles">
+        <h3>Vehículos</h3>
+        <div id="vehiclesContainer"></div>
+        <button type="button" id="addVehicleBtn">Añadir vehículo</button>
+      </div>
+      <button type="submit">Registrarse</button>
+    </form>
+
+    <!-- Login -->
+    <form id="form-login">
+      <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" name="email" type="email" required/></div>
+      <div class="field"><label for="loginPassword">Contraseña</label><input id="loginPassword" name="password" type="password" required/></div>
+      <button type="submit">Iniciar sesión</button>
+    </form>
+  </div>
+
+  <script>
+    // Cambiar pestañas
+    const tabReg = document.getElementById('tab-register');
+    const tabLog = document.getElementById('tab-login');
+    const formReg = document.getElementById('form-register');
+    const formLog = document.getElementById('form-login');
+    tabReg.onclick = () => {
+      tabReg.classList.add('active'); tabLog.classList.remove('active');
+      formReg.classList.add('active'); formLog.classList.remove('active');
+    };
+    tabLog.onclick = () => {
+      tabLog.classList.add('active'); tabReg.classList.remove('active');
+      formLog.classList.add('active'); formReg.classList.remove('active');
+    };
+
+    // Vehículos dinámicos
+    let vehicleCount = 0;
+    const maxCustomerVehicles = 4;
+    const vehiclesContainer = document.getElementById('vehiclesContainer');
+    const addVehicleBtn     = document.getElementById('addVehicleBtn');
+    const accountTypeSelect = document.getElementById('accountType');
+
+    function canAddVehicle() {
+      return accountTypeSelect.value === 'Fleet' || vehicleCount < maxCustomerVehicles;
+    }
+
+    function addVehicleBlock() {
+      if (!canAddVehicle()) {
+        alert(`Clientes pueden agregar hasta ${maxCustomerVehicles} vehículos.`);
+        return;
+      }
+// Creando un nuevo bloque de información para un vehículo
+    const idx = vehicleCount++;
+    const div = document.createElement('div');
+    div.className = 'vehicle';
+    div.innerHTML = `
+      <button type="button" class="remove-btn">×</button>
+      <div class="field">
+        <label>Marca</label>
+        <select name="vehicles[${idx}][brand]" required>
+          <option value="">-- Selecciona una marca --</option>
+          <option>ABARTH</option>
+          <option>AC</option>
+          <option>ACURA</option>
+          <option>ALFA ROMEO</option>
+          <option>ALLARD</option>
+          <option>ALLSTATE</option>
+          <option>ALPINE</option>
+          <option>ALVIS</option>
+          <option>AM GENERAL</option>
+          <option>AMERICAN AUSTIN</option>
+          <option>AMERICAN BANTAM</option>
+          <option>AMERICAN MOTORS</option>
+          <option>AMPHICAR</option>
+          <option>APOLLO</option>
+          <option>APPERSON</option>
+          <option>ARMSTRONG-SIDDELEY</option>
+          <option>ARNOLT-BRISTOL</option>
+          <option>ARNOLT-MG</option>
+          <option>ASTON MARTIN</option>
+          <option>AUBURN</option>
+          <option>AUDI</option>
+          <option>AUSTIN</option>
+          <option>AUSTIN-HEALEY</option>
+          <option>AVANTI</option>
+          <option>BENTLEY</option>
+          <option>BERKELEY</option>
+          <option>BIZZARRINI</option>
+          <option>BLACKHAWK</option>
+          <option>BMW</option>
+          <option>BOND</option>
+          <option>BORGWARD</option>
+          <option>BRICKLIN</option>
+          <option>BRISTOL</option>
+          <option>BUGATTI</option>
+          <option>BUICK</option>
+          <option>CADILLAC</option>
+          <option>CASE</option>
+          <option>CHANDLER</option>
+          <option>CHECKER</option>
+          <option>CHEVROLET</option>
+          <option>CHRYSLER</option>
+          <option>CISITALIA</option>
+          <option>CITROËN</option>
+          <option>CLEVELAND</option>
+          <option>COLE</option>
+          <option>CONTINENTAL</option>
+          <option>CORD</option>
+          <option>CROSLEY</option>
+          <option>CUNNINGHAM</option>
+          <option>DAEWOO</option>
+          <option>DAF</option>
+          <option>DAIHATSU</option>
+          <option>DAIMLER</option>
+          <option>DAVIS</option>
+          <option>DE VAUX</option>
+          <option>DELAGE</option>
+          <option>DELAHAYE</option>
+          <option>DELLOW</option>
+          <option>DELOREAN</option>
+          <option>DENZEL</option>
+          <option>DESOTO</option>
+          <option>DETOMASO</option>
+          <option>DEUTSCH-BONNET</option>
+          <option>DIANA</option>
+          <option>DKW</option>
+          <option>DODGE</option>
+          <option>DORETTI</option>
+          <option>DU PONT</option>
+          <option>DUAL-GHIA</option>
+          <option>DUESENBERG</option>
+          <option>DURANT</option>
+          <option>EAGLE</option>
+          <option>EDSEL</option>
+          <option>ELCAR</option>
+          <option>ELVA</option>
+          <option>ERSKINE</option>
+          <option>ESSEX</option>
+          <option>EXCALIBUR</option>
+          <option>FACEL VEGA</option>
+          <option>FAIRTHORPE</option>
+          <option>FALCON KNIGHT</option>
+          <option>FARGO</option>
+          <option>FERRARI</option>
+          <option>FIAT</option>
+          <option>FISKER</option>
+          <option>FLINT</option>
+          <option>FORD</option>
+          <option>FRANKLIN</option>
+          <option>FRAZER NASH</option>
+          <option>FREIGHTLINER</option>
+          <option>GARDNER</option>
+          <option>GENESIS</option>
+          <option>GEO</option>
+          <option>GLAS</option>
+          <option>GMC</option>
+          <option>GOLIATH</option>
+          <option>GORDON-KEEBLE</option>
+          <option>GRAHAM</option>
+          <option>GRAHAM-PAIGE</option>
+          <option>GRIFFITH</option>
+          <option>HAYNES</option>
+          <option>HCS</option>
+          <option>HEALEY</option>
+          <option>HENRY J</option>
+          <option>HERTZ</option>
+          <option>HILLMAN</option>
+          <option>HINO</option>
+          <option>HISPANO-SUIZA</option>
+          <option>HONDA</option>
+          <option>HOTCHKISS</option>
+          <option>HRG</option>
+          <option>HUDSON</option>
+          <option>HUMBER</option>
+          <option>HUMMER</option>
+          <option>HUPMOBILE</option>
+          <option>HYUNDAI</option>
+          <option>INEOS</option>
+          <option>INFINITI</option>
+          <option>INTERNATIONAL</option>
+          <option>ISO</option>
+          <option>ISUZU</option>
+          <option>IVECO</option>
+          <option>JAGUAR</option>
+          <option>JEEP</option>
+          <option>JENSEN</option>
+          <option>JEWETT</option>
+          <option>JORDAN</option>
+          <option>JOWETT</option>
+          <option>KAISER-FRAZER</option>
+          <option>KARMA</option>
+          <option>KENWORTH</option>
+          <option>KIA</option>
+          <option>KISSEL</option>
+          <option>KURTIS</option>
+          <option>LADA</option>
+          <option>LAFORZA</option>
+          <option>LAGONDA</option>
+          <option>LAMBORGHINI</option>
+          <option>LANCHESTER</option>
+          <option>LANCIA</option>
+          <option>LAND ROVER</option>
+          <option>LASALLE</option>
+          <option>LEA-FRANCIS</option>
+          <option>LEXINGTON</option>
+          <option>LEXUS</option>
+          <option>LINCOLN</option>
+          <option>LOCOMOBILE</option>
+          <option>LORDSTOWN MOTORS</option>
+          <option>LOTUS</option>
+          <option>LUCID</option>
+          <option>MACK</option>
+          <option>MAICO</option>
+          <option>MARATHON</option>
+          <option>MARAUDER</option>
+          <option>MARCOS</option>
+          <option>MARMON</option>
+          <option>MARQUETTE</option>
+          <option>MASERATI</option>
+          <option>MATRA</option>
+          <option>MAXWELL</option>
+          <option>MAYBACH</option>
+          <option>MAZDA</option>
+          <option>MCLAREN</option>
+          <option>MERCEDES-BENZ</option>
+          <option>MERCURY</option>
+          <option>MERKUR</option>
+          <option>MESSERSCHMITT</option>
+          <option>MG</option>
+          <option>MINI</option>
+          <option>MITSUBISHI</option>
+          <option>MITSUBISHI FUSO</option>
+          <option>MOBILITY VENTURES</option>
+          <option>MONTEVERDI</option>
+          <option>MOON</option>
+          <option>MORETTI</option>
+          <option>MORGAN</option>
+          <option>MORRIS</option>
+          <option>MOSKVICH</option>
+          <option>NARDI</option>
+          <option>NASH</option>
+          <option>NISSAN</option>
+          <option>NSU</option>
+          <option>OAKLAND</option>
+          <option>OLDSMOBILE</option>
+          <option>OMEGA</option>
+          <option>OPEL</option>
+          <option>OSCA</option>
+          <option>PACKARD</option>
+          <option>PAIGE</option>
+          <option>PANHARD</option>
+          <option>PANOZ</option>
+          <option>PANTHER</option>
+          <option>PEERLESS</option>
+          <option>PEGASO</option>
+          <option>PETERBILT</option>
+          <option>PEUGEOT</option>
+          <option>PIERCE-ARROW</option>
+          <option>PLYMOUTH</option>
+          <option>POLESTAR</option>
+          <option>PONTIAC</option>
+          <option>PORSCHE</option>
+          <option>QVALE</option>
+          <option>RAM</option>
+          <option>RELIANT</option>
+          <option>RENAULT</option>
+          <option>REO</option>
+          <option>RICKENBACKER</option>
+          <option>RILEY</option>
+          <option>RIVIAN</option>
+          <option>ROAMER</option>
+          <option>ROCKNE</option>
+          <option>ROLLIN</option>
+          <option>ROLLS-ROYCE</option>
+          <option>ROOSEVELT</option>
+          <option>ROVER</option>
+          <option>SAAB</option>
+          <option>SABRA</option>
+          <option>SALEEN</option>
+          <option>SALMSON</option>
+          <option>SATURN</option>
+          <option>SCION</option>
+          <option>SHELBY</option>
+          <option>SIATA</option>
+          <option>SIMCA</option>
+          <option>SINGER</option>
+          <option>ŠKODA</option>
+          <option>SMART</option>
+          <option>SPYKER</option>
+          <option>SRT</option>
+          <option>STANDARD</option>
+          <option>STAR</option>
+          <option>STEARNS KNIGHT</option>
+          <option>STERLING</option>
+          <option>STEVENS-DURYEA</option>
+          <option>STUDEBAKER</option>
+          <option>STUTZ</option>
+          <option>SUBARU</option>
+          <option>SUNBEAM</option>
+          <option>SUZUKI</option>
+          <option>SWALLOW</option>
+          <option>TALBOT-LAGO</option>
+          <option>TATRA</option>
+          <option>TESLA</option>
+          <option>THINK</option>
+          <option>TOYOTA</option>
+          <option>TRIUMPH</option>
+          <option>TURNER</option>
+          <option>TVR</option>
+          <option>UD</option>
+          <option>UTILIMASTER</option>
+          <option>VAUXHALL</option>
+          <option>VELIE</option>
+          <option>VESPA</option>
+          <option>VIKING</option>
+          <option>VINFAST</option>
+          <option>VOLKSWAGEN</option>
+          <option>VOLVO</option>
+          <option>VPG</option>
+          <option>WARTBURG</option>
+          <option>WESTCOTT</option>
+          <option>WHIPPET</option>
+          <option>WILLYS</option>
+          <option>WINDSOR</option>
+          <option>WOLSELEY</option>
+          <option>WORKHORSE</option>
+          <option>YELLOW CAB</option>
+          <option>YUGO</option>
+          <option>ZÜNDAPP</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Año</label>
+        <select name="vehicles[${idx}][year]" required>
+          <option>2026</option>
+          <option>2025</option>
+          <option>2024</option>
+          <option>2023</option>
+          <option>2022</option>
+          <option>2021</option>
+          <option>2020</option>
+          <option>2019</option>
+          <option>2018</option>
+          <option>2017</option>
+          <option>2016</option>
+          <option>2015</option>
+          <option>2014</option>
+          <option>2013</option>
+          <option>2012</option>
+          <option>2011</option>
+          <option>2010</option>
+          <option>2009</option>
+          <option>2008</option>
+          <option>2007</option>
+          <option>2006</option>
+          <option>2005</option>
+          <option>2004</option>
+          <option>2003</option>
+          <option>2002</option>
+          <option>2001</option>
+          <option>2000</option>
+          <option>1999</option>
+          <option>1998</option>
+          <option>1997</option>
+          <option>1996</option>
+          <option>1995</option>
+          <option>1994</option>
+          <option>1993</option>
+          <option>1992</option>
+          <option>1991</option>
+          <option>1990</option>
+          <option>1989</option>
+          <option>1988</option>
+          <option>1987</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Modelo</label>
+        <input name="vehicles[${idx}][model]" type="text" required />
+      </div>
+      <div class="field">
+        <label>Motor</label>
+        <input name="vehicles[${idx}][engine]" type="text" placeholder="ej. 1.5L L4" required />
+      </div>
+      <div class="field">
+        <label>Color</label>
+        <input name="vehicles[${idx}][color]" type="text" required />
+      </div>
+      <div class="field">
+        <label>Últimos 3 de placa</label>
+        <input name="vehicles[${idx}][plateLast3]" type="text" maxlength="3" required />
+      </div>
+      <div class="field">
+        <label>Imagen VIN (opcional)</label>
+        <input name="vehicles[${idx}][vinImage]" type="file" accept="image/*" />
+      </div>
+      <div class="field">
+        <label>Imagen del vehículo (opcional)</label>
+        <input name="vehicles[${idx}][vehicleImage]" type="file" accept="image/*" />
+      </div>
+      <div class="field">
+        <label>VIN</label>
+        <input name="vehicles[${idx}][vin]" type="text" />
+      </div>
+      <div class="field">
+        <label>Intervalo de servicio</label>
+        <select name="vehicles[${idx}][serviceIntervals][]" required>
+          <option value="30">30</option>
+          <option value="60">60</option>
+          <option value="90">90</option>
+          <option value="120">120</option>
+        </select>
+      </div>
+    `;
+
+      div.querySelector('.remove-btn').onclick = () => {
+        vehiclesContainer.removeChild(div);
+        vehicleCount--;
+      };
+      vehiclesContainer.appendChild(div);
+    }
+    addVehicleBtn.onclick = addVehicleBlock;
+
+    // Registro
+    formReg.onsubmit = async e => {
+      e.preventDefault();
+      const fd = new FormData(formReg);
+      const res = await fetch('/api/register', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const err = await res.json();
+        return alert('Error al registrar: ' + (err.error || res.statusText));
+      }
+      const data = await res.json();
+      window.location.href = '/customer.html';
+    };
+
+    // Login
+    formLog.onsubmit = async e => {
+      e.preventDefault();
+      const body = {
+        email: formLog.email.value,
+        password: formLog.password.value
+      };
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        return alert('Error al iniciar sesión: ' + (err.error || res.statusText));
+      }
+      const { accountType } = await res.json();
+      if (accountType === 'Fleet') {
+        window.location.href = '/fleets.html';
+      } else {
+        window.location.href = '/customer.html';
+      }
+    };
+  </script>
+</body>
+</html>

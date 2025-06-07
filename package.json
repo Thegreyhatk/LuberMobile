@@ -1,0 +1,35 @@
+{
+  "name": "luber",
+  "version": "1.0.0",
+  "description": "API de Luber: chat, registro de clientes y gestión de citas",
+  "main": "server.js",
+  "scripts": {
+    "start": "node -r dotenv/config server.js",
+    "dev": "nodemon -r dotenv/config server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "luber",
+    "express",
+    "mongoose",
+    "chat",
+    "citas"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "mongoose": "^8.15.1",
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^7.0.3",
+    "paypal-rest-sdk": "^1.8.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

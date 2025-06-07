@@ -1,0 +1,175 @@
+:root {
+    --primary:     #2563eb;
+    --accent:      #ff5722;
+    --bg:          #f4f6f8;
+    --card-bg:     #ffffff;
+    --text:        #333333;
+    --border:      #dddddd;
+    --radius:      8px;
+    --shadow:      rgba(0, 0, 0, 0.1);
+    --today-bg:    #eaf4ff;
+  }
+  
+  * { box-sizing: border-box; }
+  
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .calendar-container {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px var(--shadow);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--primary);
+    color: #fff;
+    padding: 1rem 2rem;
+    flex: 0 0 auto;
+  }
+  
+  .calendar-header button {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    cursor: pointer;
+  }
+  
+  .calendar-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 1fr;
+    gap: 2px;
+    background: var(--border);
+    flex: 1 1 auto;
+  }
+  
+  .day-name {
+    background: var(--border);
+    text-align: center;
+    padding: 1rem 0;
+    font-weight: bold;
+  }
+  
+  .day-cell {
+    background: #fff;
+    position: relative;
+    padding: 0.5rem;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .day-cell.today {
+    background: var(--today-bg);
+  }
+  
+  .day-number {
+    font-size: 1rem;
+    font-weight: bold;
+  }
+  
+  .appt-list {
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    overflow-y: auto;
+    flex: 1 1 auto;
+  }
+  
+  .appt-item {
+    display: block;
+    padding: 4px 6px;
+    margin-bottom: 4px;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .appt-item:hover {
+    background: #e64a19;
+  }
+  
+  .appt-time {
+    font-weight: bold;
+  }
+  
+  .appt-title {
+    margin-left: 0.25rem;
+  }
+  
+  .appt-client {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.8;
+    margin-left: 1.5rem;
+  }
+  
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+  
+  .modal-content {
+    background: #fff;
+    padding: 2rem;
+    border-radius: var(--radius);
+    max-width: 400px;
+    width: 90%;
+    position: relative;
+  }
+  
+  .modal-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  
+  .modal-content h3 {
+    margin-top: 0;
+    color: var(--primary);
+  }
+  
+  .modal-content p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+  }
+  

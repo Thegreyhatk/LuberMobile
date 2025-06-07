@@ -1,0 +1,22 @@
+[
+  {
+    "path": "F:/Luber/Luber/ConfirmationMsm.js",
+    "runtime": "Node.js",
+    "autostart": true
+  },
+  {
+    "path": "F:/Luber/Luber/pay.js",
+    "runtime": "Node.js",
+    "autostart": true
+  },
+  {
+    "path": "F:/Luber/Luber/server.js",
+    "runtime": "Node.js",
+    "autostart": true
+  },
+  {
+    "path": "F:/Luber/Luber/Node mailer/server_mailer.js",
+    "runtime": "Node.js",
+    "autostart": true
+  }
+]
