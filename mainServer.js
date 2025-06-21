@@ -1,25 +1,48 @@
 // mainServer.js
 
 require('dotenv').config();
-
 const express    = require('express');
 const mongoose   = require('mongoose');
 const bcrypt     = require('bcrypt');
 const { sendWelcomeEmail } = require('./mailer');
 const session    = require('express-session');
 const multer     = require('multer');
-const path       = require('path');
-const fs         = require('fs');
 const cors       = require('cors');
 const http       = require('http');
 const { Server } = require('socket.io');
 const { MongoClient, ObjectId } = require('mongodb');
 const paypalRouter = require('./routes/paypal');
-const BotReply = require('./models/BotReply');
+const BotReply   = require('./models/BotReply');
+const path       = require('path');
+const fs         = require('fs');
 
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server);
+
+// --- CONFIGURACIÓN CLOUDINARY ---
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    const folder = file.fieldname === 'image' ? 'chat' : 'uploads';
+    return {
+      folder,
+      format: 'jpg',
+      public_id: file.originalname.split('.')[0] + '-' + Date.now()
+    };
+  }
+});
+
+const upload = multer({ storage: cloudinaryStorage });
 
 // --- CORS ---
 app.use(cors({
@@ -27,14 +50,12 @@ app.use(cors({
   credentials: true
 }));
 
-// --- Crear carpetas de uploads si no existen ---
+// --- Archivos estáticos (si tienes contenido en public)
 const UPLOADS_ROOT = path.join(__dirname, 'public/uploads');
 const CHAT_ROOT    = path.join(UPLOADS_ROOT, 'chat');
 [UPLOADS_ROOT, CHAT_ROOT].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
-
-// --- Archivos estáticos ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_ROOT));
 
@@ -44,19 +65,20 @@ mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
-
 app.set('trust proxy', true);
 
+// --- Cliente raw de Mongo para operaciones directas ---
 const mongoRawClient = new MongoClient(MONGO_URI);
 let usersCollection, schedulesCollection;
 mongoRawClient.connect()
   .then(() => {
     const rawDb = mongoRawClient.db();
-    usersCollection    = rawDb.collection('customerprofiles');
+    usersCollection     = rawDb.collection('customerprofiles');
     schedulesCollection = rawDb.collection('schedules');
     console.log('✅ Conectado a MongoDB para acceso directo');
   })
   .catch(err => console.error('❌ Error conectando con MongoDB:', err));
+
 
 // --- Schemas y Modelos ---
 const vehicleSchema = new mongoose.Schema({
@@ -176,21 +198,14 @@ function isAuthenticated(req, res, next) {
   else res.status(401).json({ error: 'No autorizado' });
 }
 
-const storage = multer.diskStorage({
-  destination: (req,file,cb) =>
-    cb(null, file.fieldname === 'image' ? CHAT_ROOT : UPLOADS_ROOT),
-  filename: (req,file,cb) => {
-    const safe = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g,'_');
-    cb(null, Date.now() + '-' + safe);
-  }
-});
-const upload = multer({ storage });
-
 // --------------------------
 // RUTAS DE AUTENTICACIÓN
 // --------------------------
 app.post('/api/register', upload.any(), async (req, res) => {
   try {
+    console.log('📨 BODY:', req.body);
+    console.log('📦 FILES:', req.files);
+
     const {
       accountType, fullName, address, phone,
       officePhone, email, password
@@ -202,23 +217,23 @@ app.post('/api/register', upload.any(), async (req, res) => {
         : Object.values(req.body.vehicles)
       : [];
 
+    // 🔁 Usar las URLs públicas de Cloudinary
     const files = {};
     req.files.forEach(f => {
-      files[f.fieldname] =
-        (f.fieldname === 'image' ? '/uploads/chat/' : '/uploads/') +
-        f.filename;
+      console.log(`🖼️ Procesando archivo: ${f.fieldname} → ${f.path}`);
+      files[f.fieldname] = f?.path?.startsWith('http') ? f.path : (f?.secure_url || f?.url || '');
+
     });
 
     const vehicles = rawVeh.map((v, i) => {
-      // Si v viene como string (por multipart/form-data), parsearlo:
       if (typeof v === 'string') {
         try { v = JSON.parse(v); } catch (e) { v = {}; }
       }
-    
+
       const serviceIntervals = Array.isArray(v.serviceIntervals)
         ? v.serviceIntervals.map(n => Number(n))
         : [Number(v.serviceIntervals || 0)];
-    
+
       return {
         brand: v.brand || '',
         year: Number(v.year) || 0,
@@ -232,16 +247,23 @@ app.post('/api/register', upload.any(), async (req, res) => {
         serviceIntervals,
         interval: serviceIntervals[0] || 0,
         baseInterval: serviceIntervals[0] || 0,
-        milage: 0 // ✅ ¡Ahora sí se guardará correctamente!
+        milage: 0
       };
     });
-    
 
     const user = await Customer.create({
-      accountType, fullName, address, phone, officePhone,
+      accountType,
+      fullName,
+      address,
+      phone,
+      officePhone,
       email,
       profilePictureUrl: files.profilePicture || '',
-      vehicles, service: {}, oilChanges: [], points: [], cancellations: [],
+      vehicles,
+      service: {},
+      oilChanges: [],
+      points: [],
+      cancellations: [],
       passwordHash: await bcrypt.hash(password, 10)
     });
 
@@ -251,16 +273,20 @@ app.post('/api/register', upload.any(), async (req, res) => {
     await Conversation.create({ userId: user._id, messages: [] });
     req.session.userId      = user._id;
     req.session.accountType = user.accountType;
+
+    console.log('✅ Usuario registrado correctamente:', user.email);
     res.json({ success: true, accountType: user.accountType });
 
-  } catch(err) {
+  } catch (err) {
     if (err.code === 11000 && err.keyPattern?.email) {
+      console.warn('⚠️ Correo ya registrado:', req.body.email);
       return res.status(400).json({ error: 'Este correo ya está registrado.' });
     }
-    console.error('Error en /api/register:', err);
-    res.status(400).json({ error: err.message });
+    console.error('❌ Error en /api/register:\n', JSON.stringify(err, null, 2));
+    res.status(400).json({ error: err.message || 'Error desconocido' });
   }
 });
+
 
 app.post('/api/login', async (req,res) => {
   try {

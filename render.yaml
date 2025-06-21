@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: luber-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node mainServer.js
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
