@@ -59,25 +59,38 @@ const CHAT_ROOT    = path.join(UPLOADS_ROOT, 'chat');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_ROOT));
 
-// --- Conexión a MongoDB ---
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/LuberDB';
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+// --- Conexión a MongoDB Atlas ---
+const MONGO_URI = process.env.MONGODB_URI;
+
+if (!MONGO_URI) {
+  console.error('❌ No se encontró MONGODB_URI en las variables de entorno');
+  process.exit(1); // detiene el servidor
+}
+
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ Conectado a MongoDB con Mongoose'))
+  .catch(err => {
+    console.error('❌ Error conectando con Mongoose:', err);
+    process.exit(1);
+  });
+
 app.set('trust proxy', true);
 
 // --- Cliente raw de Mongo para operaciones directas ---
 const mongoRawClient = new MongoClient(MONGO_URI);
 let usersCollection, schedulesCollection;
+
 mongoRawClient.connect()
   .then(() => {
-    const rawDb = mongoRawClient.db();
+    const rawDb = mongoRawClient.db('LuberDB');
     usersCollection     = rawDb.collection('customerprofiles');
     schedulesCollection = rawDb.collection('schedules');
-    console.log('✅ Conectado a MongoDB para acceso directo');
+    console.log('✅ Conectado a MongoDB Atlas para acceso directo');
   })
-  .catch(err => console.error('❌ Error conectando con MongoDB:', err));
+  .catch(err => {
+    console.error('❌ Error conectando con cliente Mongo raw:', err);
+    process.exit(1);
+  });
 
 
 // --- Schemas y Modelos ---
