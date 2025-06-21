@@ -771,7 +771,10 @@ app.put('/api/vehicles/:id/milage', isAuthenticated, async (req, res) => {
   }
 });
 
-
+// Ruta base para comprobar si el servidor está vivo
+app.get('/', (req, res) => {
+  res.send('🟢 Luber backend corriendo en Render');
+});
 
 // Socket.io: al conectar
 io.on('connection', async socket => {
