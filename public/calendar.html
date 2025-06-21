@@ -5,13 +5,84 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Calendario de Citas – Luber</title>
   <link rel="stylesheet" href="css/calendar.css"/>
+  <style>
+    /* Pequeños estilos para el filtro */
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      background: #007bff;
+      color: #fff;
+    }
+    .calendar-header button {
+      background: #0056b3;
+      border: none;
+      color: #fff;
+      padding: 0.4rem 0.8rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .calendar-header select {
+      padding: 0.4rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: none;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      background: #ddd;
+    }
+    .day-name, .day-cell {
+      background: #f8f8f8;
+      padding: 0.5rem;
+      min-height: 80px;
+    }
+    .day-cell.empty { background: #eee; }
+    .day-cell.today { background: #fde047; }
+    .day-number { font-weight: bold; margin-bottom: 0.25rem; }
+    .appt-list { list-style: none; margin:0; padding:0; font-size:0.85rem; }
+    .appt-item { cursor: pointer; margin-bottom:2px; }
+    .appt-time { font-weight: bold; margin-right:4px;}
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed; top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding:1rem;
+      border-radius:6px;
+      max-width:400px;
+      width:90%;
+      position: relative;
+    }
+    .modal-close {
+      position:absolute; top:8px; right:12px;
+      cursor:pointer; font-size:1.2rem;
+    }
+  </style>
 </head>
 <body>
   <div class="calendar-container">
     <header class="calendar-header">
-      <button id="prev-month">&lt;</button>
+      <div>
+        <button id="prev-month">&lt;</button>
+        <button id="next-month">&gt;</button>
+      </div>
       <h2 id="month-year"></h2>
-      <button id="next-month">&gt;</button>
+      <!-- filtro: Todos / Clientes / Flotas -->
+      <select id="filter-select">
+        <option value="All">Todos</option>
+        <option value="Customer">Clientes</option>
+        <option value="Fleet">Flotas</option>
+      </select>
     </header>
     <div class="calendar-grid">
       <div class="day-name">Dom</div>
@@ -21,7 +92,7 @@
       <div class="day-name">Jue</div>
       <div class="day-name">Vie</div>
       <div class="day-name">Sáb</div>
-      <!-- Aquí se inyectarán los días -->
+      <!-- días inyectados aquí -->
     </div>
   </div>
 
@@ -41,8 +112,12 @@
 
   <script>
     const fetchOpts = { credentials: 'same-origin' };
-    let today = new Date(), currentMonth = today.getMonth(), currentYear = today.getFullYear();
+    let today = new Date(),
+        currentMonth = today.getMonth(),
+        currentYear = today.getFullYear();
+
     const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const filterSelect = document.getElementById('filter-select');
 
     document.getElementById('prev-month').onclick = () => {
       currentMonth--;
@@ -54,67 +129,68 @@
       if (currentMonth > 11) { currentMonth = 0; currentYear++; }
       renderCalendar();
     };
+    filterSelect.onchange = renderCalendar;
 
     async function loadAppointments() {
       const res = await fetch('/api/appointments', fetchOpts);
       if (!res.ok) return [];
-      const { appointments } = await res.json();
-      return appointments;
+      return (await res.json()).appointments || [];
     }
 
     async function renderCalendar() {
       const container = document.querySelector('.calendar-grid');
-      // limpiar previos
+      // eliminar días previos
       container.querySelectorAll('.day-cell').forEach(e=>e.remove());
 
-      // título
+      // actualizar título
       document.getElementById('month-year').textContent = `${monthNames[currentMonth]} ${currentYear}`;
 
       const firstDay = new Date(currentYear, currentMonth, 1).getDay();
       const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
 
-      const appts = await loadAppointments();
+      // cargar y filtrar citas
+      const all = await loadAppointments();
+      const filter = filterSelect.value; // "All", "Customer", "Fleet"
+      const appts = all.filter(a => filter==='All' || a.accountType===filter);
+
+      // agrupar por fecha
       const byDate = {};
       appts.forEach(a => {
-        // p.ej. a.date = '2025-05-18'
-        (byDate[a.date] = byDate[a.date]||[]).push(a);
+        (byDate[a.date]=byDate[a.date]||[]).push(a);
       });
 
-      // offset
-      for (let i = 0; i < firstDay; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'day-cell empty';
-        container.appendChild(cell);
+      // espacios vacíos
+      for (let i=0; i<firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'day-cell empty';
+        container.appendChild(empty);
       }
-      // días
-      for (let d = 1; d <= daysInMonth; d++) {
+      // días del mes
+      for (let d=1; d<=daysInMonth; d++) {
         const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
         const cell = document.createElement('div');
         cell.className = 'day-cell';
-        if (dateStr === today.toISOString().slice(0,10)) {
-          cell.classList.add('today');
-        }
+        if (dateStr === today.toISOString().slice(0,10)) cell.classList.add('today');
 
         const num = document.createElement('div');
         num.className = 'day-number';
         num.textContent = d;
         cell.appendChild(num);
 
+        // si hay citas ese día
         if (byDate[dateStr]) {
           const list = document.createElement('ul');
           list.className = 'appt-list';
           byDate[dateStr].forEach(a => {
-            const item = document.createElement('li');
-            item.className = 'appt-item';
-            item.innerHTML = `
+            const li = document.createElement('li');
+            li.className = 'appt-item';
+            li.innerHTML = `
               <span class="appt-time">${a.time}</span>
               <span class="appt-title">${a.service.name}</span>
-              <span class="appt-client">${a.client.fullName}</span>
+              <span class="appt-client">(${a.accountType}) ${a.client.fullName}</span>
             `;
-            // asignar datos para el modal
-            item.dataset.full = JSON.stringify(a);
-            item.onclick = () => openModal(a);
-            list.appendChild(item);
+            li.onclick = () => openModal(a);
+            list.appendChild(li);
           });
           cell.appendChild(list);
         }
@@ -124,12 +200,12 @@
     }
 
     function openModal(a) {
-      document.getElementById('modal-title').textContent = `Cita ${a.service.name}`;
-      document.getElementById('modal-client').textContent = a.client.fullName + ' (' + a.client.email + ')';
+      document.getElementById('modal-title').textContent = `Cita: ${a.service.name}`;
+      document.getElementById('modal-client').textContent = `${a.client.fullName} (${a.client.email})`;
       document.getElementById('modal-service').textContent = `${a.service.name} — ${a.service.category}`;
-      document.getElementById('modal-oil').textContent = a.oilType;
+      document.getElementById('modal-oil').textContent    = a.oilType;
       document.getElementById('modal-datetime').textContent = `${a.date} a las ${a.time}`;
-      document.getElementById('modal-notes').textContent = a.notes || '—';
+      document.getElementById('modal-notes').textContent = a.notes||'—';
       document.getElementById('detail-modal').style.display = 'flex';
     }
 

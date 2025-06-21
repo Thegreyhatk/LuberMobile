@@ -14,6 +14,8 @@ const cors       = require('cors');
 const http       = require('http');
 const { Server } = require('socket.io');
 const { MongoClient, ObjectId } = require('mongodb');
+const paypalRouter = require('./routes/paypal');
+const BotReply = require('./models/BotReply');
 
 const app    = express();
 const server = http.createServer(app);
@@ -47,7 +49,6 @@ app.set('trust proxy', true);
 
 const mongoRawClient = new MongoClient(MONGO_URI);
 let usersCollection, schedulesCollection;
-
 mongoRawClient.connect()
   .then(() => {
     const rawDb = mongoRawClient.db();
@@ -59,11 +60,19 @@ mongoRawClient.connect()
 
 // --- Schemas y Modelos ---
 const vehicleSchema = new mongoose.Schema({
-  brand: String, year: Number, model: String, engine: String,
-  color: String, plateLast3: String,
-  vinImageUrl: String, vehicleImageUrl: String,
-  vin: String, serviceIntervals: [Number],
-  interval: Number, baseInterval: Number
+  brand: String,
+  year: Number,
+  model: String,
+  engine: String,
+  color: String,
+  plateLast3: String,
+  vinImageUrl: String,
+  vehicleImageUrl: String,
+  vin: String,
+  serviceIntervals: [Number],
+  interval: Number,
+  baseInterval: Number,
+  milage: { type: Number, default: 0 } // ✅ Aquí está la magia
 });
 
 const cancellationSchema = new mongoose.Schema({
@@ -144,6 +153,7 @@ const scheduleSchema = new mongoose.Schema({
     }
   }],
   confirmed: { type: Boolean, default: false },
+  paid:      { type: Boolean, default: false },   // <--- Nuevo campo
   processed: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'schedules' });
 const Schedule = mongoose.model('Schedule', scheduleSchema);
@@ -157,6 +167,9 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false }
 }));
+
+// Montar rutas PayPal
+app.use('/api/paypal', paypalRouter);
 
 function isAuthenticated(req, res, next) {
   if (req.session?.userId) next();
@@ -178,68 +191,97 @@ const upload = multer({ storage });
 // --------------------------
 app.post('/api/register', upload.any(), async (req, res) => {
   try {
-    const { accountType, fullName, address, phone, officePhone, email, password } = req.body;
+    const {
+      accountType, fullName, address, phone,
+      officePhone, email, password
+    } = req.body;
+
     const rawVeh = req.body.vehicles
-      ? (Array.isArray(req.body.vehicles) ? req.body.vehicles : Object.values(req.body.vehicles))
+      ? Array.isArray(req.body.vehicles)
+        ? req.body.vehicles
+        : Object.values(req.body.vehicles)
       : [];
+
     const files = {};
     req.files.forEach(f => {
-      files[f.fieldname] = (f.fieldname==='image' ? '/uploads/chat/' : '/uploads/') + f.filename;
+      files[f.fieldname] =
+        (f.fieldname === 'image' ? '/uploads/chat/' : '/uploads/') +
+        f.filename;
     });
-    const vehicles = rawVeh.map((v,i) => {
-      const arr = Array.isArray(v.serviceIntervals) ? v.serviceIntervals : [v.serviceIntervals];
-      const nums = arr.map(n=>Number(n));
+
+    const vehicles = rawVeh.map((v, i) => {
+      // Si v viene como string (por multipart/form-data), parsearlo:
+      if (typeof v === 'string') {
+        try { v = JSON.parse(v); } catch (e) { v = {}; }
+      }
+    
+      const serviceIntervals = Array.isArray(v.serviceIntervals)
+        ? v.serviceIntervals.map(n => Number(n))
+        : [Number(v.serviceIntervals || 0)];
+    
       return {
-        brand:v.brand, year:+v.year, engine:v.engine, model:v.model,
-        color:v.color, plateLast3:v.plateLast3,
-        vinImageUrl: files[`vehicles[${i}][vinImage]`]||'',
-        vehicleImageUrl: files[`vehicles[${i}][vehicleImage]`]||'',
-        vin:v.vin||'', serviceIntervals:nums,
-        interval:nums[0]||0, baseInterval:nums[0]||0
+        brand: v.brand || '',
+        year: Number(v.year) || 0,
+        engine: v.engine || '',
+        model: v.model || '',
+        color: v.color || '',
+        plateLast3: v.plateLast3 || '',
+        vin: v.vin || '',
+        vinImageUrl: files[`vehicles[${i}][vinImage]`] || '',
+        vehicleImageUrl: files[`vehicles[${i}][vehicleImage]`] || '',
+        serviceIntervals,
+        interval: serviceIntervals[0] || 0,
+        baseInterval: serviceIntervals[0] || 0,
+        milage: 0 // ✅ ¡Ahora sí se guardará correctamente!
       };
     });
+    
 
     const user = await Customer.create({
       accountType, fullName, address, phone, officePhone,
-      email, profilePictureUrl: files.profilePicture||'',
-      vehicles, service:{}, oilChanges:[], points:[], cancellations:[],
-      passwordHash: await bcrypt.hash(password,10)
+      email,
+      profilePictureUrl: files.profilePicture || '',
+      vehicles, service: {}, oilChanges: [], points: [], cancellations: [],
+      passwordHash: await bcrypt.hash(password, 10)
     });
 
     sendWelcomeEmail(user.email, user.fullName)
-      .catch(err=>console.error('❌ Falló envío de correo:',err));
+      .catch(err => console.error('❌ Falló envío de correo:', err));
 
-    await Conversation.create({ userId:user._id, messages:[] });
-    req.session.userId = user._id;
+    await Conversation.create({ userId: user._id, messages: [] });
+    req.session.userId      = user._id;
     req.session.accountType = user.accountType;
-    res.json({ success:true, accountType:user.accountType });
+    res.json({ success: true, accountType: user.accountType });
+
   } catch(err) {
-    if (err.code===11000 && err.keyPattern?.email) {
-      return res.status(400).json({ error:'Este correo ya está registrado.' });
+    if (err.code === 11000 && err.keyPattern?.email) {
+      return res.status(400).json({ error: 'Este correo ya está registrado.' });
     }
-    console.error('Error en /api/register:',err);
-    res.status(400).json({ error:err.message });
+    console.error('Error en /api/register:', err);
+    res.status(400).json({ error: err.message });
   }
 });
 
 app.post('/api/login', async (req,res) => {
   try {
-    const { email,password } = req.body;
+    const { email, password } = req.body;
     const user = await Customer.findOne({ email });
-    if (!user||!await bcrypt.compare(password,user.passwordHash)) {
+    if (!user || !await bcrypt.compare(password, user.passwordHash)) {
       throw new Error('Credenciales inválidas');
     }
-    req.session.userId = user._id;
+    req.session.userId      = user._id;
     req.session.accountType = user.accountType;
-    const ip = req.headers['x-forwarded-for']||req.socket.remoteAddress||'';
+    const ip = req.headers['x-forwarded-for']
+             || req.socket.remoteAddress
+             || '';
     await mongoRawClient.db().collection('CustomerLOG').insertOne({
-      userId:user._id, fullName:user.fullName, email, accountType:user.accountType,
-      ip, at:new Date()
+      userId: user._id, fullName: user.fullName,
+      email, accountType: user.accountType, ip, at: new Date()
     });
-    res.json({ success:true, accountType:user.accountType });
+    res.json({ success: true, accountType: user.accountType });
   } catch(err) {
-    console.error('Error en /api/login:',err.message);
-    res.status(401).json({ error:err.message });
+    console.error('Error en /api/login:', err.message);
+    res.status(401).json({ error: err.message });
   }
 });
 
@@ -248,54 +290,107 @@ app.get('/api/customer-profile', async (req,res) => {
   const u = await Customer.findById(req.session.userId).lean();
   if (!u) return res.status(404).end();
   res.json({
-    _id:u._id, accountType:u.accountType, fullName:u.fullName,
-    address:u.address, phone:u.phone, officePhone:u.officePhone,
-    email:u.email, profilePictureUrl:u.profilePictureUrl,
-    vehicles:u.vehicles, cancellations:u.cancellations
+    _id: u._id,
+    accountType: u.accountType,
+    fullName: u.fullName,
+    address: u.address,
+    phone: u.phone,
+    officePhone: u.officePhone,
+    email: u.email,
+    profilePictureUrl: u.profilePictureUrl,
+    vehicles: u.vehicles,
+    cancellations: u.cancellations
   });
 });
+
+// mainServer.js (continuación)
 
 // --------------------------
 // RUTAS DE CHAT
 // --------------------------
+let firstMessageReplied = {};
+
 app.post('/api/chat/send', upload.single('image'), async (req, res) => {
-  if (!req.session.userId) return res.status(401).json({ error: 'No autorizado' })
+  const userId = req.session.userId;
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
   const text = req.body.text || '';
   const imageUrl = req.file ? '/uploads/chat/' + req.file.filename : '';
 
   const conv = await Conversation.findOneAndUpdate(
-    { userId: req.session.userId },
+    { userId },
     {
       $push: { messages: { sender: 'customer', text, imageUrl } },
-      $set:  { archived: false }       // ← desarchivar aquí
+      $set: { archived: false }
     },
     { new: true, upsert: true }
   ).populate('userId', 'fullName email').lean();
 
   io.emit('conversation_update', conv);
+
+  // 🔥 BOT AUTORESPUESTA 🔥
+  const botReplies = await BotReply.find({}).lean();
+  const clean = text.trim().toLowerCase();
+
+  let matched = null;
+  for (const r of botReplies) {
+    const pattern = r.question
+      .replace(/{{([^}]+)}}/g, (_, opts) => `(${opts.split('|').join('|')})`)
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escapa regex
+    const regex = new RegExp(r.type === 'exact' ? `^${pattern}$` : pattern, 'i');
+    if (regex.test(clean)) {
+      matched = r;
+      break;
+    }
+  }
+
+  let replyText = matched?.answer;
+  const isFirstMessage = (conv?.messages?.filter(m => m.sender === 'customer').length || 0) === 1;
+
+  if (!replyText && isFirstMessage) {
+    replyText = '🤖 Gracias por tu mensaje. Un asesor te atenderá pronto.';
+  } else if (replyText) {
+    replyText = '🤖 ' + replyText;
+  }
+
+  if (replyText) {
+    const updated = await Conversation.findOneAndUpdate(
+      { userId },
+      {
+        $push: { messages: { sender: 'office', text: replyText, imageUrl: '' } }
+      },
+      { new: true }
+    ).populate('userId', 'fullName email').lean();
+
+    io.emit('conversation_update', updated);
+  }
+
   res.json({ success: true, messages: conv.messages });
 });
 
-app.get('/api/chat/history', async (req,res) => {
+
+
+
+app.get('/api/chat/history', async (req, res) => {
   if (!req.session.userId) return res.status(401).end();
-  const conv = await Conversation.findOne({ userId:req.session.userId }).lean();
-  res.json(conv?.messages||[]);
+  const conv = await Conversation.findOne({ userId: req.session.userId }).lean();
+  res.json(conv?.messages || []);
 });
 
-app.get('/api/chat/all', async (req,res) => {
-  const list = await Conversation.find({ archived:false })
-    .populate('userId','fullName email').lean();
+app.get('/api/chat/all', async (req, res) => {
+  const list = await Conversation.find({ archived: false })
+    .populate('userId', 'fullName email').lean();
   res.json(list);
 });
 
 app.post('/api/chat/archive', async (req, res) => {
   const { convId } = req.body;
   if (!convId) return res.status(400).json({ error: 'Falta convId' });
-
   await Conversation.findByIdAndUpdate(convId, { archived: true });
   const conv = await Conversation.findById(convId)
     .populate('userId', 'fullName email').lean();
-
   io.emit('conversation_update', conv);
   res.json({ success: true });
 });
@@ -304,13 +399,11 @@ app.post('/api/chat/reply', upload.single('image'), async (req, res) => {
   const { convId, text } = req.body;
   if (!convId) return res.status(400).json({ error: 'Falta convId' });
   const imageUrl = req.file ? '/uploads/chat/' + req.file.filename : '';
-
-  const conv = await Conversation.findByIdAndUpdate(
+  const conv     = await Conversation.findByIdAndUpdate(
     convId,
-    { $push: { messages: { sender: 'office', text: text || '', imageUrl } } },
+    { $push: { messages: { sender: 'office', text, imageUrl } } },
     { new: true }
   ).populate('userId', 'fullName email').lean();
-
   if (!conv) return res.status(404).json({ error: 'Conversación no encontrada' });
   io.emit('conversation_update', conv);
   res.json({ success: true, messages: conv.messages });
@@ -319,179 +412,248 @@ app.post('/api/chat/reply', upload.single('image'), async (req, res) => {
 // --------------------------
 // RUTAS VEHÍCULOS, SERVICIOS, CITAS
 // --------------------------
-app.get('/api/vehicles', async (req,res) => {
-  if (!req.session.userId) return res.status(401).json({ error:'No autorizado' });
-  const user = await Customer.findById(req.session.userId,'vehicles').lean();
-  res.json(user.vehicles);
+app.get('/api/vehicles', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'No autorizado' });
+  const u = await Customer.findById(req.session.userId, 'vehicles').lean();
+  res.json(u.vehicles);
 });
 
-app.get('/api/services', async (req,res) => {
-  const servicios = await Service.find({}).lean();
-  res.json(servicios);
+app.get('/api/services', async (req, res) => {
+  const list = await Service.find({}).lean();
+  res.json(list);
 });
 
-app.get('/api/availability', async (req,res) => {
-  if (!req.session.userId) return res.status(401).json({ error:'No autorizado' });
+app.get('/api/availability', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'No autorizado' });
   const { date } = req.query;
   const slots = [];
-  for (let h=9; h<=21; h++) {
-    const hour12 = h===12?12:(h>12? h-12:h);
-    const suffix = h<12?'AM':'PM';
-    slots.push(`${hour12.toString().padStart(2,'0')}:00 ${suffix}`);
+  for (let h = 9; h <= 21; h++) {
+    const h12 = h === 12 ? 12 : (h > 12 ? h - 12 : h);
+    const suf = h < 12 ? 'AM' : 'PM';
+    slots.push(`${String(h12).padStart(2, '0')}:00 ${suf}`);
   }
   let available = slots;
   try {
-    const takenDocs = await Schedule.find({ userId:req.session.userId, date }).lean();
-    const taken = takenDocs.map(d=>d.time);
-    available = slots.filter(s=>!taken.includes(s));
-  } catch(err) {
-    console.error('Error al consultar schedules:',err);
+    const taken = (await Schedule.find({ userId: req.session.userId, date }).lean())
+      .map(d => d.time);
+    available = slots.filter(s => !taken.includes(s));
+  } catch (e) {
+    console.error(e);
   }
   res.json(available);
 });
 
-app.post('/api/schedule', isAuthenticated, async (req,res) => {
+// --------------------------
+// CREAR SCHEDULE + PAYPAL
+// --------------------------
+app.post('/api/schedule', isAuthenticated, async (req, res) => {
   try {
     const { date, time, total, clientAddress, vehicles } = req.body;
     const user = await Customer.findById(req.session.userId).lean();
-    if (!user) return res.status(404).json({ error:'Usuario no encontrado' });
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    const offerArray = vehicles.map(v=>{
-      const basePrice = parseFloat(v.price)||0;
-      return parseFloat((basePrice*0.30).toFixed(2));
+    // 🔍 Obtener la información del vehículo desde el perfil del usuario
+    const enrichedVehicles = vehicles.map(v => {
+      const veh = user.vehicles.find(x => String(x._id) === String(v.vehicleId)) || {};
+      return {
+        vehicleId:      new ObjectId(v.vehicleId),
+        serviceId:      new ObjectId(v.serviceId),
+        oilType:        v.oilType,
+        price:          v.price,
+        airFilter:      v.airFilter,
+        cabinFilter:    v.cabinFilter,
+        serviceAddress: v.serviceAddress,
+        vehicleInfo: {
+          brand:           veh.brand || '',
+          model:           veh.model || '',
+          year:            veh.year || 0,
+          engine:          veh.engine || '',
+          plateLast3:      veh.plateLast3 || '',
+          vehicleImageUrl: veh.vehicleImageUrl || '',
+          vinImageUrl:     veh.vinImageUrl || ''
+        }
+      };
     });
 
-    const schedule = {
-      userId: user._id,
-      accountType: user.accountType||'Customer',
+    // 🧾 Construir el documento de schedule
+    const scheduleDoc = {
+      userId:       user._id,
+      accountType:  user.accountType || 'Customer',
       customerName: user.fullName,
-      email: user.email,
-      date, time, total, clientAddress,
-      offerPrice: offerArray,
-      secured:false, reserved:false, reason:'awaiting Reason',
-      onRoute:false, started:false, finished:false,
-      vehicles: vehicles.map((v,idx)=>{
-        const vehMaster = user.vehicles.find(x=>String(x._id)===String(v.vehicleId));
-        return {
-          vehicleId: new ObjectId(v.vehicleId),
-          serviceId: new ObjectId(v.serviceId),
-          oilType: v.oilType, price: v.price,
-          airFilter:!!v.airFilter, cabinFilter:!!v.cabinFilter,
-          serviceAddress: v.serviceAddress||clientAddress,
-          vehicleInfo: {
-            brand:v.vehicleInfo.brand,
-            year:vehMaster?.year||null,
-            engine:vehMaster?.engine||'',
-            model:v.vehicleInfo.model,
-            plateLast3:v.vehicleInfo.plateLast3,
-            vehicleImageUrl:v.vehicleInfo.vehicleImageUrl||null,
-            vinImageUrl:v.vehicleInfo.vinImageUrl||null
-          }
-        };
-      }),
-      confirmed:false, processed:false,
-      createdAt:new Date(), updatedAt:new Date()
+      email:        user.email,
+      date,
+      time,
+      total,
+      clientAddress,
+      offerPrice:   enrichedVehicles.map(v => parseFloat(v.price) * 0.30),
+      secured:      false,
+      reserved:     false,
+      vehicles:     enrichedVehicles,
+      confirmed:    true,
+      paid:         false,
+      processed:    false,
+      createdAt:    new Date(),
+      updatedAt:    new Date()
     };
 
-    const result = await schedulesCollection.insertOne(schedule);
-    res.json({ success:true, insertedId:result.insertedId });
-  } catch(err) {
-    console.error('Error al guardar schedule:',err);
-    res.status(500).json({ error:'Error al guardar la cita' });
+    // 💾 Guardar en MongoDB
+    const result = await schedulesCollection.insertOne(scheduleDoc);
+
+    // 🚛 Si es Fleet, no se necesita PayPal
+    if (user.accountType === 'Fleet') {
+      return res.json({
+        success: true,
+        insertedId: result.insertedId
+      });
+    }
+
+    // 💳 Si es Customer → crear orden en PayPal
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const orderRes = await fetch(`${baseUrl}/api/paypal/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        total: total,
+        scheduleId: result.insertedId.toString()
+      })
+    });
+
+    const orderData = await orderRes.json();
+    if (!orderRes.ok) {
+      console.error('❌ PayPal create-order error:', orderData);
+      return res.status(500).json({ error: 'Fallo creando orden PayPal' });
+    }
+
+    // ✅ Todo listo
+    res.json({
+      success: true,
+      insertedId: result.insertedId,
+      paypal: orderData // { orderID, approveLink }
+    });
+
+  } catch (err) {
+    console.error('Error en POST /api/schedule:', err);
+    res.status(500).json({ error: 'Error al guardar la cita' });
   }
 });
 
-app.get('/api/schedule', async (req,res) => {
-  if (!req.session.userId) return res.status(401).json({ error:'No autorizado' });
+
+app.get('/api/schedule', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'No autorizado' });
   const { userId } = req.query;
-  if (String(req.session.userId)!==userId) {
-    return res.status(403).json({ error:'Prohibido' });
-  }
-  const schedules = await Schedule.find({ userId }).lean();
-  res.json(schedules);
+  if (String(req.session.userId) !== userId) return res.status(403).json({ error: 'Prohibido' });
+  const list = await Schedule.find({ userId }).lean();
+  res.json(list);
 });
 
-app.get('/api/fleet-schedules', async (req,res) => {
+app.get('/api/fleet-schedules', async (req, res) => {
   try {
-    const fleetSchedules = await schedulesCollection.aggregate([
-      { $match:{ accountType:'Fleet' } },
-      { $lookup:{
+    const list = await schedulesCollection.aggregate([
+      { $match: { accountType:'Fleet' } },
+      { $lookup: {
           from: 'customerprofiles',
           localField: 'userId',
           foreignField: '_id',
           as: 'userInfo'
         }
       },
-      { $unwind:{ path:'$userInfo', preserveNullAndEmptyArrays:true } },
-      { $addFields:{ customerName:'$userInfo.fullName' } },
-      { $project:{ userInfo:0 } },
-      { $sort:{ createdAt:-1 } }
+      { $unwind: { path:'$userInfo', preserveNullAndEmptyArrays:true } },
+      { $addFields: { customerName:'$userInfo.fullName' } },
+      { $project: { userInfo:0 } },
+      { $sort: { createdAt:-1 } }
     ]).toArray();
-    res.json(fleetSchedules);
-  } catch(err) {
-    console.error('Error al obtener fleet schedules:',err);
-    res.status(500).json({ error:'Error al obtener citas de flotas' });
+    res.json(list);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener fleet schedules' });
   }
 });
 
-app.delete('/api/schedule/:id', isAuthenticated, async (req,res) => {
+app.delete('/api/schedule/:id', isAuthenticated, async (req, res) => {
   try {
     const { id } = req.params;
-    if (!ObjectId.isValid(id)) return res.status(400).send('ID inválido.');
-    const sched = await schedulesCollection.findOne({_id:new ObjectId(id)});
-    if (!sched) return res.status(404).send('Cita no encontrada.');
-    if (String(sched.userId)!==String(req.session.userId)) {
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send('ID inválido.');
+    }
+
+    // 1) Obtener la cita
+    const sched = await schedulesCollection.findOne({ _id: new ObjectId(id) });
+    if (!sched) {
+      return res.status(404).send('Cita no encontrada.');
+    }
+    if (String(sched.userId) !== String(req.session.userId)) {
       return res.status(403).send('No tienes permiso.');
     }
 
-    const apptDate = new Date(sched.date+'T00:00:00');
-    const today = new Date(); today.setHours(0,0,0,0);
-    if ((apptDate - today)/(1000*60*60*24) < 1) {
+    // 2) Validar plazo
+    const apptDate = new Date(sched.date + 'T00:00:00');
+    const today   = new Date(); today.setHours(0,0,0,0);
+    if ((apptDate - today) / (1000*60*60*24) < 1) {
       return res.status(400).send('Cancela con un día de anticipación.');
     }
 
-    for (const veh of sched.vehicles) {
-      const svc = await Service.findById(veh.serviceId).lean();
-      const entry = {
-        date:new Date(), serviceName:svc?.name||'Servicio desconocido',
-        vehicleInfo:{
-          brand:veh.vehicleInfo.brand,
-          model:veh.vehicleInfo.model,
-          plateLast3:veh.vehicleInfo.plateLast3
-        },
-        archived:false
-      };
-      await Customer.updateOne({_id:sched.userId},{$push:{cancellations:entry}});
+    // 3) Leer perfil del cliente para datos del vehículo
+    const customer = await Customer.findById(sched.userId).lean();
+    if (!customer) {
+      return res.status(404).send('Cliente no encontrado.');
     }
 
-    await schedulesCollection.deleteOne({_id:new ObjectId(id)});
-    res.json({ success:true });
-  } catch(err) {
-    console.error('Error al cancelar cita:',err);
+    // 4) Para cada vehículo en la cita, agregar registro de cancelación
+    for (const veh of sched.vehicles) {
+      // Buscar datos reales del vehículo según vehicleId
+      const vehProfile = customer.vehicles.find(v =>
+        String(v._id) === String(veh.vehicleId)
+      ) || {};
+
+      // Buscar nombre de servicio
+      const svc = await Service.findById(veh.serviceId).lean();
+
+      const entry = {
+        date:        new Date(),
+        serviceName: svc?.name || 'Servicio desconocido',
+        vehicleInfo: {
+          brand:      vehProfile.brand      || 'Desconocido',
+          model:      vehProfile.model      || 'Desconocido',
+          plateLast3: vehProfile.plateLast3 || ''
+        },
+        archived:    false
+      };
+
+      await Customer.updateOne(
+        { _id: sched.userId },
+        { $push: { cancellations: entry } }
+      );
+    }
+
+    // 5) Eliminar la cita
+    await schedulesCollection.deleteOne({ _id: new ObjectId(id) });
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error('Error al cancelar cita:', err);
     res.status(500).send('Error interno.');
   }
 });
 
-app.put('/api/customer-cancellation-archive', isAuthenticated, async (req,res) => {
+
+app.put('/api/customer-cancellation-archive', isAuthenticated, async (req, res) => {
   try {
     const { date } = req.body;
     if (!date) return res.status(400).send('Fecha requerida.');
     const custId = new ObjectId(req.session.userId);
-    const dt = new Date(date);
+    const dt     = new Date(date);
     const customer = await Customer.findById(custId).lean();
     if (!customer) return res.status(404).send('Usuario no encontrado.');
-
-    const idx = customer.cancellations.findIndex(c=>new Date(c.date).getTime()===dt.getTime());
-    if (idx<0) return res.status(404).send('Cancelación no encontrada.');
-
+    const idx = customer.cancellations.findIndex(c => new Date(c.date).getTime() === dt.getTime());
+    if (idx < 0) return res.status(404).send('Cancelación no encontrada.');
     const current = customer.cancellations[idx].archived;
     await Customer.updateOne(
-      { _id:custId },
-      { $set:{[`cancellations.${idx}.archived`]:!current} }
+      { _id: custId },
+      { $set: { [`cancellations.${idx}.archived`]: !current } }
     );
-    res.json({ success:true });
-  } catch(err) {
-    console.error('Error actualizando archived:',err);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
     res.status(500).send('Error interno.');
   }
 });
@@ -501,21 +663,89 @@ mongoose.connection.once('open', () => {
   try {
     const cs = Schedule.watch();
     cs.on('change', async change => {
-      if (change.operationType==='update'
+      if (change.operationType === 'update'
           && change.updateDescription.updatedFields.confirmed) {
         const s = await Schedule.findById(change.documentKey._id).lean();
         const msg = `✅ Tu cita con ${s.vehicles.length} vehículo(s) el ${s.date} a las ${s.time} ha sido confirmada.`;
         const conv = await Conversation.findOneAndUpdate(
-          { userId:s.userId },
-          { $push:{messages:{sender:'office',text:msg,imageUrl:''}} },
-          { new:true, upsert:true }
+          { userId: s.userId },
+          { $push: { messages: { sender:'office', text: msg, imageUrl: '' } } },
+          { new: true, upsert: true }
         ).lean();
         io.emit('conversation_update', conv);
       }
     });
-    cs.on('error',()=>cs.close());
-  } catch{}
+    cs.on('error', () => cs.close());
+  } catch {}
 });
+
+
+// Obtener todas las respuestas
+app.get('/api/bot/replies', async (req, res) => {
+  const list = await BotReply.find({}).lean();
+  res.json(list);
+});
+
+// Crear o actualizar una respuesta
+app.post('/api/bot/replies', async (req, res) => {
+  const { question, answer, type } = req.body;
+  if (!question || !answer || !type) {
+    return res.status(400).json({ error: 'Falta question, answer o type' });
+  }
+  const q = question.trim().toLowerCase();
+  const existing = { question: q, answer, type };
+  const result = await BotReply.findOneAndUpdate(
+    { question: q },
+    existing,
+    { upsert: true, new: true }
+  );
+  res.json({ success: true, data: result });
+});
+
+
+// ——— Actualizar kilometraje del vehículo ———
+app.put('/api/vehicles/:id/milage', isAuthenticated, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { milage } = req.body;
+
+    if (!ObjectId.isValid(id) && typeof id !== 'string') {
+      return res.status(400).json({ error: 'ID de vehículo inválido' });
+    }
+
+    if (typeof milage !== 'number' || isNaN(milage) || milage < 0) {
+      return res.status(400).json({ error: 'Kilometraje inválido' });
+    }
+
+    console.log('🔧 Actualizando kilometraje', {
+      user: req.session.userId,
+      vehicleId: id,
+      milage
+    });
+
+    const result = await Customer.updateOne(
+      {
+        _id: req.session.userId,
+        $or: [
+          { 'vehicles._id': new ObjectId(id) },
+          { 'vehicles._id': id }
+        ]
+      },
+      { $set: { 'vehicles.$.milage': milage } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ error: 'Vehículo no encontrado o no autorizado' });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Error al actualizar kilometraje:', err);
+    res.status(500).json({ error: 'Error interno al actualizar kilometraje' });
+  }
+});
+
+
 
 // Socket.io: al conectar
 io.on('connection', async socket => {

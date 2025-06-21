@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot Luber</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/chatbot.css">
+</head>
+<body>
+  <div class="container">
+    <img src="/images/logo.png" alt="Logo Luber" style="max-width: 160px; display: block; margin: 0 auto 10px;">
+    <h2>🤖 Chatbot Luber</h2>
+  
+
+    <div id="chat-box"></div>
+
+    <form id="chat-form">
+      <input id="chat-input" placeholder="Escribe tu mensaje..." autocomplete="off" />
+      <button type="submit">Enviar</button>
+    </form>
+
+    <hr>
+    <h3>🛠 Programar Respuesta Personalizada</h3>
+    <form id="reply-form">
+      <label>Si el cliente dice:</label><br>
+      <div id="q-display" contenteditable="true"></div>
+
+      <label>El bot responderá:</label>
+      <input id="a-input" />
+
+      <label>Tipo de coincidencia:</label>
+      <select id="type-select">
+        <option value="partial">Coincidencia parcial</option>
+        <option value="exact">Coincidencia exacta</option>
+      </select>
+
+      <div class="btn-group">
+        <button type="submit">Guardar</button>
+        <button type="button" id="legend-btn">📘 Leyenda</button>
+      </div>
+    </form>
+
+    <div id="legend-box">
+      <strong>🤓 Coincidencia Exacta:</strong><br>
+      El bot responde <u>solo si</u> el cliente escribe exactamente esa frase.<br><br>
+      <strong>🎯 Coincidencia Parcial:</strong><br>
+      El bot responde si la frase del cliente <u>contiene</u> lo que escribiste.<br><br>
+      <strong>Ejemplo con variaciones:</strong><br>
+      Si escribes: <code>hola {{necesito|quiero|busco}} ayuda</code><br>
+      El bot entiende: “hola necesito ayuda”, “hola busco ayuda”, etc.
+    </div>
+
+    <ul id="reply-list"></ul>
+  </div>
+
+  <script src="js/chatbot.js"></script>
+</body>
+</html>

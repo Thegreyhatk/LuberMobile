@@ -1,0 +1,70 @@
+<!-- public/paypal.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pago con PayPal</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background:#f8f9f9; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; }
+    .box { background:#fff; padding:2rem; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); text-align:center; }
+    .success { color:#2ecc71; }
+    .error   { color:#e74c3c; }
+    button { margin-top:1rem; padding:0.6rem 1.2rem; border:none; border-radius:4px; background:#0070ba; color:#fff; cursor:pointer; }
+    button:hover { background:#005c99; }
+  </style>
+</head>
+<body>
+  <div class="box" id="message">
+    <h1>Procesando tu pago…</h1>
+    <p>Por favor, espera un momento.</p>
+  </div>
+
+  <script>
+    async function main() {
+      const params = new URLSearchParams(window.location.search);
+      const orderID     = params.get('token') || params.get('orderID');
+      const scheduleId  = params.get('scheduleId');
+      const isCancel    = params.get('cancel') === 'true' || params.get('cancel') !== null;
+      const msgBox = document.getElementById('message');
+
+      if (isCancel) {
+        msgBox.innerHTML = '<h1 class="error">Pago cancelado</h1><p>Has cancelado el pago. Puedes intentar de nuevo.</p><button onclick="history.back()">Volver</button>';
+        return;
+      }
+      if (!orderID || !scheduleId) {
+        msgBox.innerHTML = '<h1 class="error">Parámetros inválidos</h1><p>Faltan datos de la transacción.</p>';
+        return;
+      }
+
+      try {
+        // Llamamos a tu API para capturar la orden
+        const res = await fetch('/api/paypal/capture-order', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ orderID })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error desconocido');
+
+        // Éxito
+        msgBox.innerHTML = `
+          <h1 class="success">¡Pago recibido!</h1>
+          <p>Tu orden <strong>${orderID}</strong> ha sido capturada correctamente.</p>
+          <p>ID de cita: <strong>${scheduleId}</strong></p>
+          <button onclick="window.location.href='/'">Volver al inicio</button>
+        `;
+      } catch (err) {
+        console.error('Capture error:', err);
+        msgBox.innerHTML = `
+          <h1 class="error">Error al procesar el pago</h1>
+          <p>${err.message}</p>
+          <button onclick="history.back()">Intentar de nuevo</button>
+        `;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', main);
+  </script>
+</body>
+</html>
