@@ -1,180 +1,682 @@
-/* css/login_registration.css */
+/* === RESET === */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-/* Reset y estilo base */
 body {
-    margin: 0;
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: url('../images/background.png') no-repeat center center fixed;
-    background-size: cover;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 20px;
+  font-family: 'Nunito', sans-serif;
+
+  /* full-cover background */
+  background-image: url('../images/map7.jpg');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+
+  /* keep it fixed when scrolling */
+  background-attachment: fixed;
+
+  /* rest of your layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+  color: #222;
+  font-size: 1.5rem;
+}
+
+/* === HEADER === */
+.main-header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 70px;
+  background: #5DADE2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.header-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-logo {
+  max-width: 120px;
+  height: auto;
+  display: block;
+}
+
+/* === CONTENEDOR PRINCIPAL === */
+.main-wrapper {
+  flex: 1;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding-top: 100px;
+}
+
+/* === FORMULARIO === */
+.form-container {
+  background: rgba(255, 255, 255, 0.856);
+  border-radius: 20px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+/* === LOGO DE LUBER === */
+.logo-wrapper {
+  text-align: center;
+  padding: 24px 0 8px;
+}
+
+#whatsLuberIcon {
+  width: 300px;
+  height: auto;
+  margin-top: -40px;
+  cursor: pointer;
+  transition: transform 0.3s, filter 0.3s;
+  filter: grayscale(40%) brightness(1.2);
+}
+
+/* === TÍTULO DE FORMULARIO === */
+.form-heading {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #222;
+  margin: px 0 20px;
+}
+
+/* === TABS === */
+.tabs {
+  display: flex;
+  background: #f5f5f5;
+  border-bottom: 2px solid #ddd;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 20px;
+  font-weight: 600;
+  color: #444;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+
+.tab.active {
+  background: #fff;
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+}
+
+
+
+/* === FORM === */
+form {
+  display: none;
+  padding: 36px 40px;
+}
+
+form.active {
+  display: block;
+}
+
+.field {
+  margin-bottom: 24px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+input,
+select,
+button {
+  width: 100%;
+  padding: 16px;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  border: 1px solid #ccc;
+  background-color: #fefefe;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.4);
+}
+
+/* === BOTONES === */
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+form button[type="submit"] {
+  background-color: #28a745;
+}
+
+form button[type="submit"]:hover {
+  background-color: #218838;
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+@media (min-width: 480px) {
+  .btn-group {
+    flex-direction: row;
+    justify-content: space-between;
   }
-  
-  /* Card principal */
+
+  .btn-group button {
+    width: 48%;
+  }
+}
+
+/* === VEHICLES === */
+.vehicle {
+  position: relative;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  padding: 18px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#addVehicleBtn {
+  margin-top: 12px;
+  background: #28a745;
+}
+
+#addVehicleBtn:hover {
+  background: #1e7e34;
+}
+
+/* === STEPPER === */
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding: 0 14px;
+  position: relative;
+}
+
+.stepper::before {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: #ddd;
+  z-index: 0;
+}
+
+.step {
+  text-align: center;
+  flex: 1;
+  z-index: 1;
+}
+
+.circle {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 8px;
+  background-color: #ccc;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.label {
+  font-size: 1rem;
+  color: #666;
+}
+
+.step.active .circle {
+  background-color: #007bff;
+}
+
+.step.completed .circle {
+  background-color: #28a745;
+}
+
+.step.active .label {
+  color: #007bff;
+}
+
+.step.completed .label {
+  color: #28a745;
+}
+
+/* === MODALS === */
+.modal-step {
+  animation: fadeInStep 0.3s ease;
+}
+
+.modal-step.hidden {
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.modal-step h3 {
+  margin-bottom: 28px;
+  font-size: 1.5rem;
+  color: #007bff;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 12px;
+}
+
+
+/* === COMPANY SECTION === */
+.company-section {
+  background: linear-gradient(to bottom, #111, #000);
+  padding: 24px;
+  text-align: center;
+  max-width: 720px;
+  width: 100%;
+  margin: 32px auto 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.company-section h4 {
+  font-size: 1.2rem;
+  color: #fff;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.company-links {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 1rem;
+}
+
+.company-links li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.company-links i {
+  color: #00bfff;
+  font-size: 0.9rem;
+}
+
+.company-links a {
+  text-decoration: none;
+  color: #cce3ff;
+  font-weight: 500;
+}
+
+.company-links a:hover {
+  color: #00bfff;
+  letter-spacing: 0.2px;
+}
+
+/* === LOADER === */
+#loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(187, 180, 180, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#loader.hidden {
+  display: none;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #ccc;
+  border-top: 6px solid #00bfff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 600px) {
+  body {
+    font-size: 0.9rem;
+  }
+
+  .form-heading {
+    font-size: 1.1rem;
+  }
+
+  .company-links {
+    font-size: 0.8rem;
+  }
+
+  #whatsLuberIcon {
+    width: 200px;
+  }
+
   .form-container {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    width: 100%;
-    max-width: 500px;
-    overflow: hidden;
+    padding: 24px;
   }
-  
-  /* Logo */
-  .logo-wrapper {
-    text-align: center;
-    padding: 20px 0 10px;
-  }
-  .logo-wrapper img {
-    max-width: 140px;
-    height: auto;
-  }
-  
-  /* Tabs de navegación */
-  .tabs {
-    display: flex;
-    background: #f0f0f0;
-    flex-wrap: wrap;
-  }
+
   .tab {
-    flex: 1;
-    text-align: center;
     padding: 14px;
-    cursor: pointer;
-    font-weight: bold;
-    color: #555;
-    transition: background 0.3s, color 0.3s;
+    font-size: 1rem;
   }
-  .tab.active {
-    background: #fff;
-    color: #222;
-    border-bottom: 2px solid #007bff;
-  }
-  
-  /* Formularios */
-  form {
-    display: none;
-    padding: 20px 30px;
-  }
-  form.active {
-    display: block;
-  }
-  .field {
-    margin-bottom: 16px;
-  }
-  label {
-    display: block;
-    margin-bottom: 6px;
-    color: #333;
-  }
+
+  label,
   input,
   select,
   button {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
     font-size: 1rem;
-    box-sizing: border-box;
-  }
-  input:focus,
-  select:focus {
-    outline: none;
-    border-color: #007bff;
-  }
-  
-  /* Botón principal */
-  button {
-    background: #007bff;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s;
-    font-size: 1rem;
-  }
-  button:hover {
-    background: #0056b3;
-  }
-  
-  /* Sección de vehículos */
-  .vehicles h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #007bff;
-  }
-  .vehicle {
-    position: relative;
-    border: 1px solid #ddd;
     padding: 12px;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    background: #fafafa;
   }
-  .remove-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: #dc3545;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-    line-height: 24px;
-    text-align: center;
-    cursor: pointer;
+
+  .modal-step h3 {
+    font-size: 1.2rem;
   }
-  
-  /* Botón agregar vehículo */
-  #addVehicleBtn {
-    margin-top: 8px;
-    background: #28a745;
+}
+
+
+
+/* === HEADER DROPDOWN === */
+.header-dropdown {
+  position: relative;
+  margin-left: 30px;
+}
+
+.dropdown-toggle {
+  background: #222;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropdown-toggle .arrow {
+  font-size: 0.7rem;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: #546ea0;
+  color: #fff;
+  border-radius: 12px;
+  padding: 8px 0;
+  list-style: none;
+  margin: 0;
+  display: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  min-width: 180px;
+}
+
+.dropdown-menu li {
+  padding: 10px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dropdown-menu li:hover {
+  background: #444;
+}
+
+.header-dropdown.show .dropdown-menu {
+  display: block;
+}
+
+
+
+.modal-info {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.modal-info.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 2rem 1.75rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  font-family: 'Nunito', sans-serif;
+  animation: slideUp 0.3s ease-out;
+  border: 2px solid #007bff;
+  font-size: 0.88rem; /* Texto más pequeño y claro */
+  line-height: 1.5;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  font-size: 1.4rem; /* Menor tamaño */
+  color: #1d72e8;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.modal-content p {
+  color: #444;
+  margin: 0.75rem 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 1.25rem 0;
+}
+
+.close-modal {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s ease-in-out;
+}
+
+.close-modal:hover {
+  color: #e74c3c;
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(25px);
+    opacity: 0;
   }
-  #addVehicleBtn:hover {
-    background: #1e7e34;
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
-  
-  /* RESPONSIVE */
-  @media (max-width: 480px) {
-    .form-container {
-      padding: 0;
-      border-radius: 8px;
-      max-width: 100%;
-    }
-    .tabs {
-      flex-direction: column;
-    }
-    .tab {
-      padding: 12px;
-      font-size: 1rem;
-    }
-    form {
-      padding: 16px 20px;
-    }
-    label {
-      font-size: 0.95rem;
-    }
-    input,
-    select,
-    button {
-      font-size: 1rem;
-      padding: 9px;
-    }
-    button {
-      font-size: 1rem;
-    }
-    .remove-btn {
-      width: 22px;
-      height: 22px;
-      font-size: 12px;
-      line-height: 22px;
-    }
-    .vehicles h3 {
-      font-size: 1.2rem;
-    }
+}
+
+/* Responsive fallback */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 1.25rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
   }
-  
+
+  .modal-content h2 {
+    font-size: 1.25rem;
+  }
+
+  .close-modal {
+    font-size: 1.3rem;
+    top: 10px;
+    right: 14px;
+  }
+}
+
+
+
+
+/* === CONTACT MODAL === */
+.contact-toggle {
+  padding: 4px 8px;    /* menos espacio interno */
+  font-size: 0.75rem; /* texto más pequeño */
+}
+
+
+#contact-modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+#contact-modal .modal-content {
+  background: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 5px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+}
+
+#contact-modal .close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  color: #333;
+  cursor: pointer;
+}
+
+#contact-form {
+  display: flex;
+  flex-direction: column;
+}
+
+#contact-form label {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+#contact-form input,
+#contact-form textarea {
+  margin-top: 5px;
+  padding: 8px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#contact-form .btn-submit {
+  margin-top: 15px;
+  padding: 10px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+}
+
+#contact-form .btn-submit:hover {
+  background-color: #0056b3;
+}
+
+
+
+

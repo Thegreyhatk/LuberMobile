@@ -1,94 +1,214 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
+  <!-- ✅ Head: metadatos, título, estilos -->
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Panel de Flotas – Luber</title>
+  <title>Fleet Panel – Luber</title>
   <link rel="stylesheet" href="css/fleets.css"/>
+  <link rel="icon" href="images/Job-Employment.png"/>
   <style>
-.oil-changes-container {
-  background: #f4f4f4;
-  padding: 15px;
-  border-radius: 8px;
-  margin: 30px 0;
-  text-align: center;
-  border: 1px solid #ccc;
-}
-.oil-changes-container h2 {
-  margin-bottom: 10px;
-}
-.oil-changes-container .field {
-  font-size: 1.2em;
-}
-.oil-changes-container .field label::before {
-  content: "🛢️ ";
-}
+    /* Inline style for bot-info button */
+    #bot-info-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2em;
+      margin-left: 8px;
+    }
   </style>
 </head>
 <body>
+  <!-- ✅ Contenedor principal -->
   <div class="container">
+    
+    <!-- 🔷 Header: Datos del cliente de flota -->
     <div class="header">
-      <img id="profilePic" class="profile-pic" src="" alt="Logo de la flota"/>
+      <img id="profilePic" class="profile-pic" src="" alt="Fleet logo"/>
       <div class="user-info">
-        <h1 id="fullName">Flota</h1>
+        <h1 id="fullName">Fleet</h1>
         <div id="deniedReason"></div>
-        <div class="field"><label>Tipo:</label><span id="accountType"></span></div>
-        <div class="field"><label>Contacto:</label><span id="contactName"></span> – <span id="phone"></span></div>
+        <div class="field"><label>Type:</label><span id="accountType"></span></div>
+        <div class="field"><label>Contact:</label><span id="contactName"></span> – <span id="phone"></span></div>
         <div class="field"><label>Email:</label><span id="email"></span></div>
-        <div class="field"><label>Dirección:</label><span id="address"></span></div>
+        <div class="field"><label>Address:</label><span id="address"></span></div>
       </div>
       <div class="company-logo"></div>
     </div>
 
-    <div class="last-updated" id="lastUpdated">Última actualización: --:--:--</div>
+    <!-- ⏱️ Última actualización -->
+    <div class="last-updated" id="lastUpdated">Last update: --:--:--</div>
+    
+    <!-- 📅 Botón de agendamiento + ícono de tutorial -->
+    <div style="text-align:center; margin:20px 0;">
+      <button id="schedule-btn" class="btn-schedule">📅 Schedule Appointment</button>
+      <img
+        id="howItWorksBtn"
+        class="icon-btn"
+        src="https://res.cloudinary.com/dsu6g9dym/image/upload/v1751414679/9eb67c48-0907-46b9-bca6-c4e9d0b8a541_vx9vjy.png"
+        alt="How it works"
+        title="How it works"
+      />
+    </div>
 
+    <!-- 🛢️ Sección de recibos de cambio de aceite -->
+    <div class="oil-changes">
+      <h2>Oil Change Receipts</h2>
+      <div class="form-group">
+        <select id="oilChangesDropdown">
+          <option value="">— Select an oil change receipt —</option>
+        </select>
+      </div>
+      <div id="oilChangeDetails" class="oil-change-details"></div>
+    </div>
+
+    <!-- 🚗 Sección de vehículos de flota -->
     <div class="vehicles">
-      <h2>Vehículos de la flota</h2>
+      <div class="vehicle-header">
+        <h2>Fleet Vehicles</h2>
+        <button id="addVehicleBtn" class="btn-add-vehicle-modern">➕ Add Vehicle</button>
+      </div>
       <div id="vehiclesContainer" class="vehicle-grid"></div>
     </div>
 
-    <!-- 🛢️ Sección de oilChanges -->
-    <div class="oil-changes-container">
-      <h2>Historial de cambios de aceite</h2>
-      <div class="field"><label>Total registrados:</label> <span id="oilChangesCount">0</span></div>
-    </div>
-
-    <div style="text-align:center; margin:20px 0;">
-      <button id="schedule-btn" class="btn-schedule">📅 Agendar Cita</button>
-    </div>
-
-    <!-- Cancelaciones -->
+    <!-- ❌ Sección de cancelaciones -->
     <div class="cancellations-container">
-      <h2>Cancelaciones de la flota</h2>
+      <h2>Fleet Cancellations</h2>
       <div class="show-archived-toggle">
         <input type="checkbox" id="showArchivedCheckbox"/>
-        <label for="showArchivedCheckbox">Mostrar cancelaciones archivadas</label>
+        <label for="showArchivedCheckbox">Show archived cancellations</label>
       </div>
       <div id="cancellationsContainer"></div>
       <div id="noCancellationsMsg" class="no-cancellations" style="display: none;">
-        No hay cancelaciones registradas.
+        No cancellations registered.
       </div>
     </div>
   </div>
 
+  <!-- 💬 Widget de chat flotante -->
   <div id="chat-widget">
     <div id="chat-header">
-      Chat con Luber
+      Chat with Luber
+      <button id="bot-info-btn" title="Bot Info">🤖(options)</button>
       <span id="chat-close" class="chat-close">&times;</span>
     </div>
     <div id="chat-body"></div>
     <form id="chat-form">
-      <input type="text" id="chat-input" placeholder="Escribe tu mensaje…" autocomplete="off"/>
+      <input type="text" id="chat-input" placeholder="Type your message…" autocomplete="off"/>
       <button type="submit">↩️</button>
     </form>
   </div>
 
+  <!-- 🖼️ Modal de imagen para visualización expandida -->
   <div id="img-modal" class="modal">
     <span id="img-modal-close" class="modal-close">&times;</span>
     <img id="img-modal-full" class="modal-content"/>
   </div>
 
-  <script src="js/fleet.js"></script>
+  <!-- 🚘 Modal para agregar vehículo -->
+  <div id="addVehicleModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" id="addVehicleModalClose">&times;</span>
+      <h2 style="margin-bottom: 16px;">➕ New Vehicle</h2>
+      <form id="addVehicleForm" enctype="multipart/form-data">
+        <div class="form-group"><input name="brand" required placeholder="Brand" /></div>
+        <div class="form-group"><input name="model" required placeholder="Model" /></div>
+        <div class="form-group"><input name="year" type="number" required placeholder="Year" /></div>
+        <div class="form-group"><input name="engine" placeholder="Engine" /></div>
+        <div class="form-group"><input name="color" placeholder="Color" /></div>
+        <div class="form-group"><input name="plateLast3" placeholder="Last 3 digits of plate" /></div>
+        <div class="form-group"><input name="vin" placeholder="VIN (optional)" /></div>
+        <div class="form-group"><input name="serviceIntervals" type="number" required placeholder="Interval (km)" /></div>
+        <div class="form-group">
+          <label>Vehicle Image</label>
+          <input type="file" name="vehicleImage" accept="image/*" required/>
+        </div>
+        <div class="form-group">
+          <label>VIN Image</label>
+          <input type="file" name="vinImage" accept="image/*" required/>
+        </div>
+        <div style="text-align: right; margin-top: 10px;">
+          <button type="submit" class="btn-schedule">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
+  <!-- 🔍 Modal Lightbox: Cómo funciona -->
+  <div id="howItWorksModal" class="modal modern-modal">
+    <div class="modal-content modern-content">
+      <span id="howItWorksClose" class="modal-close">&times;</span>
+      <h2>How Luber Works</h2>
+      <p>Luber connects your vehicle to trusted workshops in real-time.</p>
+      <ul>
+        <li>Register your car and view its history.</li>
+        <li>Schedule appointments instantly with one click.</li>
+        <li>Receive notifications and digital receipts.</li>
+      </ul>
+      <p>That's it! We handle everything so your fleet stays up-to-date.</p>
+    </div>
+  </div>
+
+  <!-- 📦 Scripts y lógica de modales y chat -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/fleet.js"></script>
+  <script>
+    // === 🚘 MODAL: Añadir Vehículo ===
+    document.getElementById('addVehicleBtn').onclick = () =>
+      document.getElementById('addVehicleModal').style.display = 'flex';
+    document.getElementById('addVehicleModalClose').onclick = () =>
+      document.getElementById('addVehicleModal').style.display = 'none';
+    document.getElementById('addVehicleForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/api/vehicles', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+      });
+      if (!res.ok) return alert('❌ Error:\n' + await res.text());
+      alert('✅ Vehicle added successfully');
+      e.target.reset();
+      document.getElementById('addVehicleModal').style.display = 'none';
+      await loadProfile();
+    };
+
+    // === 🧠 MODAL: Cómo funciona Luber ===
+    const howBtn   = document.getElementById('howItWorksBtn');
+    const howModal = document.getElementById('howItWorksModal');
+    const howClose = document.getElementById('howItWorksClose');
+    howBtn.addEventListener('click', () => howModal.classList.add('open'));
+    howClose.addEventListener('click', () => howModal.classList.remove('open'));
+    window.addEventListener('click', e => {
+      if (e.target === howModal) howModal.classList.remove('open');
+    });
+
+    // === 💬 CHAT & BOT-INFO ===
+    // Note: fleet.js already defines `socket`, so we only attach handlers here.
+
+    socket.on('connect', () => {
+      console.log('🔌 Connected to Socket.io on Luber');
+    });
+    socket.on('conversation_update', conv => {
+      const msg = conv.messages.slice(-1)[0];
+      const chatBody = document.getElementById('chat-body');
+      const div = document.createElement('div');
+      div.className = msg.sender === 'office' ? 'msg office' : 'msg customer';
+      div.textContent = msg.text;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    });
+
+    // Bot info button
+    document.getElementById('bot-info-btn').addEventListener('click', () => {
+      const infoText = '🤖 You can turn me off by typing "bot off" or turn me on with "bot on".';
+      const chatBody = document.getElementById('chat-body');
+      const div = document.createElement('div');
+      div.className = 'msg office';
+      div.textContent = infoText;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    });
+  </script>
 </body>
 </html>

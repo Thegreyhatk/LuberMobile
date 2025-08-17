@@ -10,7 +10,6 @@
   <div class="container">
     <img src="/images/logo.png" alt="Logo Luber" style="max-width: 160px; display: block; margin: 0 auto 10px;">
     <h2>🤖 Chatbot Luber</h2>
-  
 
     <div id="chat-box"></div>
 
@@ -20,13 +19,14 @@
     </form>
 
     <hr>
-    <h3>🛠 Programar Respuesta Personalizada</h3>
+
+    <h3>🛠 Programar Palabra Clave</h3>
     <form id="reply-form">
-      <label>Si el cliente dice:</label><br>
-      <div id="q-display" contenteditable="true"></div>
+      <label>Cuando el cliente escriba algo que incluya:</label><br>
+      <div id="q-display" contenteditable="true" style="border: 1px solid #ccc; padding: 5px; min-height: 30px;" placeholder="Ej: ayudarme, cancelar, crear cita"></div>
 
       <label>El bot responderá:</label>
-      <input id="a-input" />
+      <input id="a-input" placeholder="Ej: Claro, te puedo ayudar con eso" />
 
       <label>Tipo de coincidencia:</label>
       <select id="type-select">
@@ -36,23 +36,27 @@
 
       <div class="btn-group">
         <button type="submit">Guardar</button>
-        <button type="button" id="legend-btn">📘 Leyenda</button>
+        <button type="button" id="legend-btn">📘 ¿Cómo funciona?</button>
       </div>
     </form>
 
-    <div id="legend-box">
-      <strong>🤓 Coincidencia Exacta:</strong><br>
-      El bot responde <u>solo si</u> el cliente escribe exactamente esa frase.<br><br>
-      <strong>🎯 Coincidencia Parcial:</strong><br>
-      El bot responde si la frase del cliente <u>contiene</u> lo que escribiste.<br><br>
-      <strong>Ejemplo con variaciones:</strong><br>
-      Si escribes: <code>hola {{necesito|quiero|busco}} ayuda</code><br>
-      El bot entiende: “hola necesito ayuda”, “hola busco ayuda”, etc.
+    <div id="legend-box" style="display: none; margin-top: 10px;">
+      <strong>🎯 Coincidencia parcial:</strong><br>
+      El bot responde si el mensaje del cliente <u>contiene</u> la palabra o frase clave.<br><br>
+
+      <strong>🤓 Coincidencia exacta:</strong><br>
+      El bot solo responde si el cliente escribe <u>exactamente</u> lo que programaste.<br><br>
+
+      <strong>Ejemplos:</strong><br>
+      Si programas: <code>ayudarme</code><br>
+      El bot responderá a: “Hola, ¿puedes ayudarme?”, “¿Alguien puede ayudarme urgente?”, etc.
     </div>
 
+    <h4>📋 Respuestas programadas</h4>
     <ul id="reply-list"></ul>
   </div>
 
   <script src="js/chatbot.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
 </body>
 </html>

@@ -4,17 +4,17 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Panel de Chat – Luber Oficina</title>
+  <link rel="icon" href="https://res.cloudinary.com/dsu6g9dym/image/upload/v1755006852/5dcca685-a870-440f-bed2-b91bd3e98050_eafton.png" />
   <link rel="stylesheet" href="/css/office_chat.css"/>
-  <link rel="icon" href="images/logo.png" />
 </head>
 <body>
   <div id="sidebar">
     <header>
       <img src="images/logo.png" alt="Luber Logo">
       <select id="view-select">
-        <option value="active">Conversaciones Activas</option>
-        <option value="archived">Archivadas</option>
-      </select>
+        <option value="active">💬 Conversaciones Activas</option>
+        <option value="archived">📦 Archivadas</option>
+      </select>      
       <input id="search-archived" type="text" placeholder="Buscar cliente..." style="display:none;"/>
     </header>
     <ul id="conversations"></ul>
@@ -24,15 +24,33 @@
     <header>
       <span id="chat-header">Selecciona una conversación</span>
       <div>
-        <button id="archive-btn"            class="btn" disabled>📥 Archivar</button>
-        <button id="fleet-approval-btn"     class="btn">🛻 Flotas</button>
-        <button id="customer-approval-btn"  class="btn">🚘 Clientes</button>
-        <button id="employees-approval-btn" class="btn">👷 Employees Approval</button>
-        <button id="invoices-status-btn"    class="btn">💼 Invoices Status</button>
-        <button id="chat-settings-btn"      class="btn">⚙️ Configuración</button>
-        <button id="refresh-chat-btn"       class="btn">🔄 Refrescar</button>
+        <!-- Botón Archivar -->
+        <img src="/images/Archive.png" 
+             id="archive-btn" 
+             class="btn" 
+             alt="Archivar Conversación" 
+             title="📥 Archivar" />
+    
+        <!-- Botón Flotas -->
+        <button id="fleet-approval-btn" class="btn image-button" title="Flotas">
+          <img src="/images/Fleet.png" alt="Flotas">
+        </button>
+    
+        <!-- Botón ChatBot -->
+        <button id="chatbot-btn" class="btn image-button" title="Mi ChatBot">
+          <img src="/images/mychatbot.png" alt="Mi ChatBot">
+        </button>
+    
+        <!-- Botón Paypal Fleet Invoices -->
+        <button id="paypal-invoices-btn" class="btn image-button" title="Paypal Fleet Invoices">
+          <img src="/images/PaypalInvoice.png" alt="Paypal Fleet Invoices">
+        </button>
+    
+        <!-- Botón Refrescar -->
+        <button id="refresh-chat-btn" class="btn">🔄 Refrescar</button>
       </div>
     </header>
+    
 
     <div id="chat-messages"></div>
     <form id="reply-form" enctype="multipart/form-data">

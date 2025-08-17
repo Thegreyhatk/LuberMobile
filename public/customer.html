@@ -1,62 +1,94 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Mi Cuenta – Luber</title>
+  <title>My Account – Luber</title>
   <link rel="stylesheet" href="/css/customer.css"/>
+  <link rel="icon" href="https://res.cloudinary.com/dsu6g9dym/image/upload/v1755006519/Job-Employment_y4iqls.png" />
+  <style>
+    /* Quick inline styles for the bot-info button */
+    #bot-info-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2em;
+      margin-left: 8px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <img id="profilePic" class="profile-pic" src="" alt="Foto de perfil"/>
+      <img id="profilePic" class="profile-pic" src="" alt="Profile picture"/>
       <div class="user-info">
-        <h1 id="fullName">Usuario</h1>
+        <h1 id="fullName">User</h1>
         <div id="deniedReason"></div>
-        <div class="field"><label>Tipo:</label><span id="accountType"></span></div>
-        <div class="field"><label>Dirección:</label><span id="address"></span></div>
-        <div class="field"><label>Teléfono:</label><span id="phone"></span></div>
-        <div class="field"><label>Oficina:</label><span id="officePhone"></span></div>
+        <div class="field"><label>Type:</label><span id="accountType"></span></div>
+        <div class="field"><label>Address:</label><span id="address"></span></div>
+        <div class="field"><label>Phone:</label><span id="phone"></span></div>
+        <div class="field"><label>Office:</label><span id="officePhone"></span></div>
         <div class="field"><label>Email:</label><span id="email"></span></div>
       </div>
       <div class="company-logo"></div>
     </div>
 
-    <!-- ✅ Botón centrado como en fleet -->
+    <div class="last-updated" id="lastUpdated">
+      Last update: --:--:--
+    </div>
+    
     <div style="text-align:center; margin:20px 0;">
-      <button id="schedule-btn" class="btn-schedule">📅 Agendar Cita</button>
+      <button id="schedule-btn" class="btn-schedule">📅 Schedule Appointment</button>
+      <img
+        id="howItWorksBtn"
+        class="icon-btn"
+        src="https://res.cloudinary.com/dsu6g9dym/image/upload/v1751414679/9eb67c48-0907-46b9-bca6-c4e9d0b8a541_vx9vjy.png"
+        alt="How it works"
+        title="How it works"
+      />
     </div>
 
-    <div class="last-updated" id="lastUpdated">
-      Última actualización: --:--:--  
+    <div class="oil-changes">
+      <h2>Oil Change Receipts</h2>
+      <div class="form-group">
+        <select id="oilChangesDropdown">
+          <option value="">— Select an oil change —</option>
+        </select>
+      </div>
+      <div id="oilChangeDetails" class="oil-change-details"></div>
     </div>
 
     <div class="vehicles">
-      <h2>Mis Vehículos</h2>
+      <div class="vehicle-header">
+        <h2>My Vehicles</h2>
+        <button id="addVehicleBtn" class="btn-add-vehicle-modern">➕ Add Vehicle</button>
+      </div>
       <div id="vehiclesContainer" class="vehicle-grid"></div>
     </div>
 
     <div class="cancellations-container">
-      <h2>Mis Cancelaciones</h2>
+      <h2>My Cancellations</h2>
       <div class="show-archived-toggle">
         <input type="checkbox" id="showArchivedCheckbox"/>
-        <label for="showArchivedCheckbox">Mostrar cancelaciones archivadas</label>
+        <label for="showArchivedCheckbox">Show archived cancellations</label>
       </div>
       <div id="cancellationsContainer"></div>
       <div id="noCancellationsMsg" class="no-cancellations" style="display: none;">
-        No tienes cancelaciones registradas.
+        You have no registered cancellations.
       </div>
     </div>
   </div>
 
   <div id="chat-widget">
     <div id="chat-header">
-      Chat con Luber
+      <span id="chat-badge" class="chat-badge"></span>
+      Chat with Luber
+      <button id="bot-info-btn" title="Bot Info">🤖(options)</button>
       <span id="chat-close" class="chat-close">&times;</span>
     </div>
     <div id="chat-body"></div>
     <form id="chat-form">
-      <input type="text" id="chat-input" placeholder="Escribe tu mensaje…" autocomplete="off"/>
+      <input type="text" id="chat-input" placeholder="Type your message…" autocomplete="off"/>
       <button type="submit">↩️</button>
     </form>
   </div>
@@ -66,25 +98,113 @@
     <img id="img-modal-full" class="modal-content"/>
   </div>
 
-  <script src="js/customer.js"></script>
-  <!-- Socket.io client para recibir notificaciones en tiempo real -->
+  <div id="addVehicleModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" id="addVehicleModalClose">&times;</span>
+      <h2 style="margin-bottom: 16px;">➕ New Vehicle</h2>
+      <form id="addVehicleForm" enctype="multipart/form-data">
+        <div class="form-group"><input name="brand" required placeholder="Brand" /></div>
+        <div class="form-group"><input name="model" required placeholder="Model" /></div>
+        <div class="form-group"><input name="year" type="number" required placeholder="Year" /></div>
+        <div class="form-group"><input name="engine" placeholder="Engine" /></div>
+        <div class="form-group"><input name="color" placeholder="Color" /></div>
+        <div class="form-group"><input name="plateLast3" placeholder="Last 3 digits of plate" /></div>
+        <div class="form-group"><input name="vin" placeholder="VIN (optional)" /></div>
+        <div class="form-group"><input name="serviceIntervals" type="number" required placeholder="Interval (km)" /></div>
+        <div class="form-group">
+          <label>Vehicle Image</label>
+          <input type="file" name="vehicleImage" accept="image/*" required/>
+        </div>
+        <div class="form-group">
+          <label>VIN Image</label>
+          <input type="file" name="vinImage" accept="image/*" required/>
+        </div>
+        <div style="text-align: right; margin-top: 10px;">
+          <button type="submit" class="btn-schedule">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div id="howItWorksModal" class="modal modern-modal">
+    <div class="modal-content modern-content">
+      <span id="howItWorksClose" class="modal-close">&times;</span>
+      <h2>How Luber Works</h2>
+      <p>Luber connects your vehicle with trusted workshops in real-time.</p>
+      <ul>
+        <li>You register your car and view history.</li>
+        <li>Schedule appointments instantly with a click.</li>
+        <li>Receive notifications and digital receipts.</li>
+      </ul>
+      <p>That's it! We handle everything to keep your car up to date.</p>
+    </div>
+  </div>
+
+  <!-- Load core scripts -->
   <script src="/socket.io/socket.io.js"></script>
+  <script src="js/customer.js"></script>
+
   <script>
-    const socket = io('http://localhost:3006', { transports: ['websocket'] });
+    // initialize socket once
+    const socket = io('http://localhost:3000', { transports: ['websocket'] });
+
+    // Socket.IO listeners
     socket.on('connect', () => {
-      console.log('🔌 Conectado a Socket.io en Luber');
+      console.log('🔌 Connected to Socket.io on Luber');
     });
     socket.on('conversation_update', conv => {
-      // Tomamos el último mensaje añadido
       const msg = conv.messages.slice(-1)[0];
-      if (msg.sender === 'office' && msg.text.includes('fue cancelada')) {
-        // Mostrar alerta y añadir al widget de chat
+      const chatBody = document.getElementById('chat-body');
+      const div = document.createElement('div');
+      div.className = msg.sender === 'office' ? 'msg office' : 'msg customer';
+      div.textContent = msg.text;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+
+      if (msg.sender === 'office' && msg.text.includes('was cancelled')) {
         alert(msg.text);
-        const p = document.createElement('p');
-        p.className = 'office-msg';
-        p.textContent = msg.text;
-        document.getElementById('chat-body').appendChild(p);
       }
+    });
+
+    // Add Vehicle modal logic
+    document.getElementById('addVehicleBtn').onclick = () =>
+      document.getElementById('addVehicleModal').style.display = 'flex';
+    document.getElementById('addVehicleModalClose').onclick = () =>
+      document.getElementById('addVehicleModal').style.display = 'none';
+    document.getElementById('addVehicleForm').onsubmit = async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/api/vehicles', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: formData
+      });
+      if (!res.ok) return alert('❌ Error: ' + await res.text());
+      alert('✅ Vehicle added successfully');
+      e.target.reset();
+      document.getElementById('addVehicleModal').style.display = 'none';
+      await loadProfile();
+    };
+
+    // How It Works modal logic
+    document.getElementById('howItWorksBtn').onclick = () =>
+      document.getElementById('howItWorksModal').style.display = 'flex';
+    document.getElementById('howItWorksClose').onclick = () =>
+      document.getElementById('howItWorksModal').style.display = 'none';
+    window.addEventListener('click', e => {
+      const howModal = document.getElementById('howItWorksModal');
+      if (e.target === howModal) howModal.style.display = 'none';
+    });
+
+    // Bot info button
+    document.getElementById('bot-info-btn').addEventListener('click', () => {
+      const infoText = '🤖 You can turn me off by typing "bot off" or back on with "bot on".';
+      const chatBody = document.getElementById('chat-body');
+      const div = document.createElement('div');
+      div.className = 'msg office';
+      div.textContent = infoText;
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
     });
   </script>
 </body>

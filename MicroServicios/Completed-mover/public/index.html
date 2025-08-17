@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🛠️ Luber - Moved Schedules</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      color: #1f77b4;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .card {
+      background: white;
+      margin: 1rem 0;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .info {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .info div {
+      margin: 0.3rem 0;
+    }
+    .label {
+      font-weight: bold;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛠️ Luber - Moved Schedules</h1>
+    <div id="list"></div>
+  </div>
+
+  <script>
+    async function fetchSchedules() {
+      const res = await fetch('/moved-schedules');
+      const data = await res.json();
+
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+
+      data.forEach(schedule => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="info">
+            <div><span class="label">Customer:</span> ${schedule.customerName}</div>
+            <div><span class="label">Email:</span> ${schedule.email}</div>
+            <div><span class="label">Completed By:</span> ${schedule.completedBy || 'N/A'}</div>
+            <div><span class="label">Date:</span> ${schedule.date} ${schedule.time}</div>
+            <div><span class="label">Moved At:</span> ${new Date(schedule.movedAt).toLocaleString()}</div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    setInterval(fetchSchedules, 5000);
+    fetchSchedules();
+  </script>
+</body>
+</html>

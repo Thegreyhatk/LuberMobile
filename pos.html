@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Restro POS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary: #FF7F00;
+      --bg: #F5F5F5;
+      --card: #FFFFFF;
+      --text: #333;
+      --text-light: #777;
+      --radius: 8px;
+      --shadow: rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      display: grid;
+      grid-template-columns: 200px 1fr 360px;
+      grid-template-rows: 60px auto;
+      grid-template-areas:
+        "sidebar header cart"
+        "sidebar main cart";
+      height: 100vh;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* SIDEBAR: SOLO CATEGORÍAS */
+    aside {
+      grid-area: sidebar;
+      background: var(--card);
+      padding: 1rem;
+      box-shadow: 2px 0 5px var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+    aside h2 {
+      font-size: 1.1rem;
+      margin-bottom: .5rem;
+      text-align: center;
+      color: var(--text);
+    }
+    #toggleCat {
+      padding: .5rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: .5rem;
+    }
+    #catPanel { display: none; margin-bottom: .5rem; }
+    #catPanel input {
+      width: 100%;
+      padding: .5rem;
+      border:1px solid var(--shadow);
+      border-radius: var(--radius);
+      margin-bottom: .5rem;
+    }
+    #catPanel button {
+      width:100%;
+      padding:.5rem;
+      border:none;
+      background:var(--primary);
+      color:#fff;
+      border-radius:var(--radius);
+      cursor:pointer;
+    }
+    #categoryButtons {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      overflow-y: auto;
+      flex:1;
+    }
+    #categoryButtons .cat-btn {
+      padding: .5rem;
+      background: var(--bg);
+      border-radius: var(--radius);
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s;
+      color: var(--text);
+    }
+    #categoryButtons .cat-btn.active,
+    #categoryButtons .cat-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* HEADER */
+    header {
+      grid-area: header;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      background: var(--card);
+      box-shadow: 0 2px 5px var(--shadow);
+    }
+    .logo { font-weight: 600; font-size: 1.1rem; color: var(--text); }
+    .search-wrap {
+      flex: 1;
+      margin: 0 1rem;
+      position: relative;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: .5rem 2.5rem .5rem .75rem;
+      border: 1px solid var(--shadow);
+      border-radius: var(--radius);
+    }
+    .search-wrap .ico {
+      position: absolute;
+      right: .75rem; top:50%; transform:translateY(-50%);
+      color: var(--text-light);
+      font-size:1rem;
+    }
+    .header-actions button {
+      margin-left: .75rem;
+      padding: .5rem 1rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* MAIN (GRID DE PRODUCTOS) */
+    main {
+      grid-area: main;
+      padding: 1rem 1.5rem;
+      overflow-y: auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 4px var(--shadow);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      cursor: pointer; transition: transform .1s;
+      position: relative;
+    }
+    .card:hover { transform: translateY(-2px); }
+
+    /* IMÁGENES MODERNAS, CUADRADAS Y PEQUEÑAS */
+    .card img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-top-left-radius: var(--radius);
+      border-top-right-radius: var(--radius);
+      max-height: 80px;
+    }
+    @media (max-width: 1024px) {
+      .card img { max-height: 60px; }
+    }
+    @media (max-width: 768px) {
+      .card img { max-height: 50px; }
+    }
+
+    .card .info {
+      padding: .5rem; flex:1; display:flex; flex-direction:column;
+    }
+    .info h3 { font-size: .95rem; margin-bottom: .25rem; color: var(--text); flex:1; }
+    .info small { font-size: .85rem; color: var(--text-light); }
+    .info .price { margin-top:.5rem; font-weight:600; color: var(--primary); }
+    .del-prod {
+      position: absolute; top: .4rem; right: .4rem;
+      background: #EF4444; border:none;
+      color:#fff; border-radius:50%;
+      width:24px; height:24px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1rem; cursor:pointer;
+    }
+    .del-prod:hover { background:#DC2626; }
+
+    /* CART (PANEL DERECHO) */
+    .cart {
+      grid-area: cart;
+      display: flex; flex-direction: column;
+      background: var(--card);
+      box-shadow: -2px 0 5px var(--shadow);
+      padding: 1rem; overflow-y: auto;
+    }
+    .cart h2 { font-size: 1.1rem; color: var(--text); margin-bottom: .5rem; }
+    .cart-list { flex:1; list-style:none; padding:0; margin:0; }
+    .cart-list li {
+      display: flex; justify-content: space-between;
+      margin-bottom: .5rem; font-size: .95rem;
+    }
+    .cart-list li small { color: var(--text-light); }
+    .totals { margin:1rem 0; text-align: right; }
+    .totals div { margin-bottom:.25rem; }
+    .cart-footer button {
+      width:100%; padding:.75rem; margin-bottom:.5rem;
+      border:none; border-radius:var(--radius); font-size:1rem; cursor:pointer;
+    }
+    .hold { background:#F3F4F6; color:var(--text); }
+    .proceed{ background:var(--primary); color:#fff; }
+
+    /* MODAL: NUEVO PRODUCTO */
+    #prodPanel {
+      position: fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      background:var(--card); padding:1.5rem;
+      border-radius:var(--radius); box-shadow:0 5px 15px var(--shadow);
+      display:none; z-index:10; width:320px;
+    }
+    #prodPanel.visible{ display:block; }
+    #prodPanel h2{ margin-bottom:1rem; font-size:1.2rem; text-align:center;}
+    #prodPanel form{ display:flex; flex-direction:column; gap:.75rem;}
+    #prodPanel input, #prodPanel select, #prodPanel textarea {
+      padding:.5rem; border:1px solid var(--shadow); border-radius:var(--radius);
+    }
+    #prodPanel .close {
+      position:absolute; top:.5rem; right:.5rem;
+      background:none;border:none;font-size:1.2rem;cursor:pointer;
+    }
+
+    /* RESPONSIVE (tablet y móvil) */
+    @media (max-width:1024px){
+      body { grid-template-columns: 160px 1fr 240px; }
+      aside{ padding:.75rem; }
+      #toggleCat{ padding:.4rem; font-size:.9rem; }
+      #categoryButtons .cat-btn{ font-size:.9rem; padding:.4rem; }
+      .grid{ gap:.75rem; }
+      .card img{ max-height:60px; }
+    }
+    @media (max-width:768px){
+      body {
+        grid-template-columns:1fr;
+        grid-template-rows:60px auto auto auto;
+        grid-template-areas:
+          "header"
+          "main"
+          "cart"
+          "footer";
+      }
+      aside{ display:none; }
+      .cart{ grid-area: cart; box-shadow:0 -2px 5px var(--shadow); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR: CATEGORÍAS -->
+  <aside>
+    <h2>Categorías</h2>
+    <button id="toggleCat">+ Nueva</button>
+    <div id="catPanel">
+      <input type="text" id="catName" placeholder="Nombre categoría"/>
+      <button id="addCat">Añadir</button>
+    </div>
+    <div id="categoryButtons"></div>
+  </aside>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">Restro POS</div>
+    <div class="search-wrap">
+      <input id="search" placeholder="Buscar producto…"/>
+      <span class="ico">🔍</span>
+    </div>
+    <div class="header-actions">
+      <button id="btnWifi">📶</button>
+      <button id="btnTable">Select Table</button>
+    </div>
+  </header>
+
+  <!-- MAIN: PRODUCTOS -->
+  <main>
+    <button id="toggleProd" style="float:right; margin-bottom:1rem;">+ Add Item</button>
+    <div class="grid" id="products"></div>
+  </main>
+
+  <!-- CART -->
+  <div class="cart">
+    <h2>Order</h2>
+    <ul class="cart-list" id="cart"></ul>
+    <div class="totals">
+      <div>Subtotal: $<span id="sub">0.00</span></div>
+      <div>Tax (8%): $<span id="tax">0.00</span></div>
+      <div><strong>Total: $<span id="total">0.00</span></strong></div>
+    </div>
+    <div class="cart-footer">
+      <button class="hold">Hold Order</button>
+      <button class="proceed">Proceed</button>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVO PRODUCTO -->
+  <section id="prodPanel">
+    <button class="close" id="closeProd">×</button>
+    <h2>Add New Item</h2>
+    <form id="prodForm">
+      <select id="prodCat" required>
+        <option value="">-- Category --</option>
+      </select>
+      <input type="text" id="prodName" placeholder="Name" required/>
+      <input type="number" id="prodPrice" placeholder="Price" step="0.01" min="0" required/>
+      <input type="file" id="prodImg" accept="image/*" required/>
+      <textarea id="prodDesc" placeholder="Description" rows="2" required></textarea>
+      <button type="submit">Save</button>
+    </form>
+  </section>
+
+  <script>
+    // STORAGE HELPERS
+    const ls = { cats:'pos_cats', prods:'pos_prods', cart:'pos_cart' };
+    const get = key => JSON.parse(localStorage.getItem(key)||'[]');
+    const set = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+    let activeCat = '';
+
+    // CATEGORÍAS
+    document.getElementById('toggleCat').onclick = ()=>{
+      const p = document.getElementById('catPanel');
+      p.style.display = p.style.display==='block'?'none':'block';
+    };
+    document.getElementById('addCat').onclick = ()=>{
+      const v = document.getElementById('catName').value.trim();
+      if(v){
+        let arr = get(ls.cats);
+        if(!arr.includes(v)) arr.push(v);
+        set(ls.cats,arr);
+        document.getElementById('catName').value='';
+        renderAll();
+      }
+    };
+    function renderCats(){
+      const cont = document.getElementById('categoryButtons');
+      cont.innerHTML = '';
+      // Botón All
+      const bAll = document.createElement('div');
+      bAll.textContent='All';
+      bAll.className='cat-btn'+(!activeCat?' active':'');
+      bAll.onclick=()=>{activeCat=''; renderAll();};
+      cont.appendChild(bAll);
+      get(ls.cats).forEach(cat=>{
+        const b = document.createElement('div');
+        b.textContent=cat; b.className='cat-btn'+(activeCat===cat?' active':'');
+        b.onclick=()=>{activeCat=cat; renderAll();};
+        cont.appendChild(b);
+      });
+      // actualizar select modal
+      const sel = document.getElementById('prodCat');
+      sel.innerHTML='<option value="">-- Category --</option>';
+      get(ls.cats).forEach(c=> sel.add(new Option(c,c)));
+    }
+
+    // PRODUCTOS
+    document.getElementById('search').oninput = renderAll;
+    function renderProds(){
+      const grid = document.getElementById('products');
+      const term = document.getElementById('search').value.toLowerCase();
+      grid.innerHTML = '';
+      get(ls.prods).forEach((p,i)=>{
+        if(activeCat && p.cat!==activeCat) return;
+        if(term && !p.name.toLowerCase().includes(term)) return;
+        const card = document.createElement('div'); card.className='card';
+        // botón eliminar producto
+        const del = document.createElement('button'); del.className='del-prod'; del.textContent='×';
+        del.onclick = e=>{
+          e.stopPropagation();
+          let arr = get(ls.prods);
+          arr.splice(i,1); set(ls.prods,arr); renderAll();
+        };
+        card.appendChild(del);
+        // imagen y datos
+        const img = document.createElement('img'); img.src=p.img; card.appendChild(img);
+        const info = document.createElement('div'); info.className='info';
+        info.innerHTML=`
+          <h3>${p.name}</h3>
+          <small>${p.cat}</small>
+          <div class="price">$${parseFloat(p.price).toFixed(2)}</div>
+        `;
+        card.appendChild(info);
+        // añadir al carrito
+        card.onclick = ()=>{
+          let c = get(ls.cart);
+          c.push(p); set(ls.cart,c); renderCart();
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    // CARRITO
+    function renderCart(){
+      const ul = document.getElementById('cart');
+      ul.innerHTML='';
+      let sub=0;
+      get(ls.cart).forEach((p,i)=>{
+        sub += +p.price;
+        const li=document.createElement('li');
+        li.innerHTML=`${p.name} <span>$${(+p.price).toFixed(2)}</span>`;
+        const btn=document.createElement('button'); btn.textContent='×';
+        btn.onclick=()=>{
+          let c=get(ls.cart); c.splice(i,1);
+          set(ls.cart,c); renderCart();
+        };
+        li.appendChild(btn); ul.appendChild(li);
+      });
+      const tax = sub*0.08;
+      document.getElementById('sub').textContent=sub.toFixed(2);
+      document.getElementById('tax').textContent=tax.toFixed(2);
+      document.getElementById('total').textContent=(sub+tax).toFixed(2);
+    }
+
+    // MODAL PRODUCTO
+    const panel = document.getElementById('prodPanel');
+    document.getElementById('toggleProd').onclick = ()=> panel.classList.toggle('visible');
+    document.getElementById('closeProd').onclick = ()=> panel.classList.remove('visible');
+    document.getElementById('prodForm').onsubmit = e=>{
+      e.preventDefault();
+      const cat=prodCat.value, name=prodName.value,
+            price=prodPrice.value, desc=prodDesc.value;
+      const file=prodImg.files[0], fr=new FileReader();
+      fr.onload = ()=>{
+        let arr=get(ls.prods);
+        arr.push({cat,name,price,desc,img:fr.result});
+        set(ls.prods,arr);
+        panel.classList.remove('visible');
+        e.target.reset();
+        renderAll();
+      };
+      fr.readAsDataURL(file);
+    };
+
+    // INIT
+    function renderAll(){
+      renderCats();
+      renderProds();
+      renderCart();
+    }
+    renderAll();
+  </script>
+</body>
+</html>

@@ -1,82 +1,161 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Registro / Login – Luber</title>
-  <link rel="stylesheet" href="css/login_registration.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Register / Login – Luber</title>
+  <link rel="icon" href="https://res.cloudinary.com/dsu6g9dym/image/upload/v1755006519/Job-Employment_y4iqls.png" />
+  <link rel="stylesheet" href="css/login_registration.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="form-container">
-    <div class="logo-wrapper">
-      <img src="images/logo.png" alt="Luber Logo">
-    </div>
 
-    <div class="tabs">
-      <div id="tab-register" class="tab active">Registro</div>
-      <div id="tab-login" class="tab">Login</div>
-    </div>
-
-    <!-- Registro -->
-    <form id="form-register" class="active" enctype="multipart/form-data">
-      <div class="field">
-        <label for="accountType">Tipo de cuenta</label>
-        <select id="accountType" name="accountType" required>
-          <option value="Customer">Customer</option>
-          <option value="Fleet">Fleet Account</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="fullName">Nombre completo</label>
-        <input id="fullName" name="fullName" type="text" required/>
-      </div>
-      <div class="field">
-        <label for="address">Dirección</label>
-        <input id="address" name="address" type="text" required/>
-      </div>
-      <div class="field">
-        <label for="phone">Teléfono</label>
-        <input id="phone" name="phone" type="tel" required/>
-      </div>
-      <div class="field">
-        <label for="officePhone">Teléfono de oficina</label>
-        <input id="officePhone" name="officePhone" type="tel"/>
-      </div>
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" required/>
-      </div>
-      <div class="field">
-        <label for="password">Contraseña</label>
-        <input id="password" name="password" type="password" required/>
-      </div>
-      <div class="field">
-        <label for="profilePicture">Foto de perfil / Logo</label>
-        <input id="profilePicture" name="profilePicture" type="file" accept="image/*" required/>
-      </div>
-      <div class="vehicles">
-        <h3>Vehículos</h3>
-        <div id="vehiclesContainer"></div>
-        <button type="button" id="addVehicleBtn">Añadir vehículo</button>
-      </div>
-      <button type="submit">Registrarse</button>
-    </form>
-
-    <!-- Login -->
-    <form id="form-login">
-      <div class="field">
-        <label for="loginEmail">Email</label>
-        <input id="loginEmail" name="email" type="email" required/>
-      </div>
-      <div class="field">
-        <label for="loginPassword">Contraseña</label>
-        <input id="loginPassword" name="password" type="password" required/>
-      </div>
-      <button type="submit">Iniciar sesión</button>
-    </form>
+  <!-- LOADER FX -->
+  <div id="loader" class="hidden">
+    <div class="spinner"></div>
   </div>
 
-  <!-- Enlazamos el JavaScript externo -->
+  <!-- HEADER FIJO CON LOGO Y DROPDOWN -->
+  <header class="main-header">
+    <div class="header-container">
+      <img src="images/logo.png" alt="Luber Logo" class="header-logo" />
+      <div class="header-dropdown">
+        <button class="dropdown-toggle">📍 Map Availability <span class="arrow">&#9662;</span></button>
+        <ul class="dropdown-menu">
+          <li>Winter Heaven FL</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- WRAPPER CENTRADO PARA TODO -->
+  <main class="main-wrapper">
+    <!-- CONTENEDOR DE FORMULARIO -->
+    <div class="form-container">
+      <h2 class="form-heading">Register to start using Luber Mobile</h2>
+
+      <div class="tabs">
+        <div id="tab-register" class="tab active">Register</div>
+        <div id="tab-login" class="tab">Login</div>
+      </div>
+
+      <!-- FORMULARIO DE REGISTRO -->
+      <form id="form-register" class="active" enctype="multipart/form-data" novalidate>
+        <!-- STEPPER -->
+        <div class="stepper">
+          <div class="step" data-step="1"><div class="circle">1</div><div class="label">Account</div></div>
+          <div class="step" data-step="2"><div class="circle">2</div><div class="label">Customer Info</div></div>
+          <div class="step" data-step="3"><div class="circle">3</div><div class="label">Vehicles</div></div>
+        </div>
+
+        <div class="modal-step" id="step-1">
+          <h3>Step 1: Account Type</h3>
+          <div class="field">
+            <label for="accountType">Account Type</label>
+            <select id="accountType" name="accountType" required>
+              <option value="">-- Select --</option>
+              <option value="Customer">Customer</option>
+              <option value="Fleet">Fleet Account</option>
+            </select>
+          </div>
+          <button type="button" class="next-btn">Next</button>
+        </div>
+
+        <div class="modal-step hidden" id="step-2">
+          <h3>Step 2: Customer Information</h3>
+          <div class="field"><label for="profilePicture">Profile Picture / Logo</label><input id="profilePicture" name="profilePicture" type="file" accept="image/*" required/></div>
+          <div class="field"><label for="fullName">Full Name</label><input id="fullName" name="fullName" type="text" required/></div>
+          <div class="field"><label for="address">Address</label><input id="address" name="address" type="text" required/></div>
+          <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" required/></div>
+          <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required/></div>
+          <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" required/></div>
+          <div class="btn-group">
+            <button type="button" class="prev-btn">Back</button>
+            <button type="button" class="next-btn">Next</button>
+          </div>
+        </div>
+
+        <div class="modal-step hidden" id="step-3">
+          <h3>Step 3: Vehicles</h3>
+          <div class="vehicles">
+            <div id="vehiclesContainer"></div>
+            <button type="button" id="addVehicleBtn">Add Vehicle</button>
+          </div>
+          <div class="btn-group">
+            <button type="button" class="prev-btn">Back</button>
+            <button type="submit">Register</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- FORMULARIO DE LOGIN -->
+      <form id="form-login">
+        <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" name="email" type="email" required/></div>
+        <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" required/></div>
+        <button type="submit">Log In</button>
+      </form>
+    </div>
+
+    <!-- SECCIÓN COMPAÑÍA -->
+    <section class="company-section">
+      <h4>Luber Mobile</h4>
+      <ul class="company-links">
+        <li><i class="fas fa-angle-right"></i> <a href="#" data-modal="about">About Us/📱Contact</a></li>
+        <li><i class="fas fa-angle-right"></i> <a href="#" data-modal="offer">What We Offer</a></li>
+        <li><i class="fas fa-angle-right"></i> <a href="#" data-modal="career">Career Opportunities</a></li>        
+      </ul>
+    </section>
+  </main>
+
+
+
+<!-- ================= MODALS ================= -->
+<div id="modal-about" class="modal-info hidden">
+  <div class="modal-content">
+    <span class="close-modal">&times;</span>
+    <h2>About Us / Sobre Nosotros</h2>
+    <p><strong>EN:</strong> Luber Mobile was created with a clear mission: <strong>to bring automotive maintenance wherever you are</strong>, eliminating the need to visit workshops and waste valuable time.</p>
+    <p>We are a technology and mobility company that blends convenience, transparency, and technical excellence. Whether you're an individual or a fleet manager, we deliver professional, fast, and reliable service on your terms.</p>
+    <p><em>Less time in the shop. More time on the road.</em></p>
+    <p><strong>EN:</strong> Text us at <a href="sms:8633355586">863‑335‑5586</a> if you have any questions.</p>
+    <hr />
+    <p><strong>ES:</strong> Luber Mobile nació con una misión clara: <strong>llevar el mantenimiento automotriz hasta donde estés</strong>, eliminando la necesidad de visitar talleres y esperar durante horas.</p>
+    <p>Somos una empresa de tecnología y movilidad que combina comodidad, transparencia y excelencia técnica. Ya seas un cliente individual o una flota empresarial, ofrecemos un servicio profesional, rápido y confiable, adaptado a tus horarios y necesidades.</p>
+    <p><em>Menos tiempo en el taller. Más tiempo en la carretera.</em></p>
+    <p><strong>ES:</strong> Envíanos un mensaje al <a href="sms:8633355586">863‑335‑5586</a> si tienes alguna pregunta.</p>
+  </div>
+</div>
+
+
+<div id="modal-offer" class="modal-info hidden">
+  <div class="modal-content">
+    <span class="close-modal">&times;</span>
+    <h2>What We Offer / Qué Ofrecemos</h2>
+    <p><strong>EN:</strong> We offer routine maintenance, oil changes, technical inspections, diagnostics, and more. Luber Mobile comes to your home, office, or wherever you are—saving time and ensuring top quality.</p>
+    <p>Both individual and Fleet customers enjoy simplified management, efficient scheduling, and certified mechanics with cutting-edge tools.</p>
+    <hr />
+    <p><strong>ES:</strong> Ofrecemos mantenimiento de rutina, cambios de aceite, inspecciones técnicas, diagnósticos y más. Luber Mobile llega hasta tu casa, oficina o donde estés, ahorrándote tiempo y garantizando calidad.</p>
+    <p>Clientes individuales y cuentas Fleet disfrutan de gestión simplificada, programación eficiente y mecánicos certificados con tecnología de punta.</p>
+  </div>
+</div>
+
+<div id="modal-career" class="modal-info hidden">
+  <div class="modal-content">
+    <span class="close-modal">&times;</span>
+    <h2>Career Opportunities / Oportunidades Laborales</h2>
+    <p><strong>EN:</strong> Want to be part of the future of mobility? Luber Mobile is growing fast and looking for committed talent—in mechanics, logistics, customer service, and software development.</p>
+    <p>We offer flexible positions, real growth opportunities, and a modern, innovative work environment.</p>
+    <hr />
+    <p><strong>ES:</strong> ¿Buscas formar parte del futuro de la movilidad? En Luber Mobile estamos creciendo rápidamente y buscamos talento comprometido, ya sea en mecánica, logística, atención al cliente o desarrollo técnico.</p>
+    <p>Ofrecemos posiciones flexibles, oportunidades reales de crecimiento y un ambiente de trabajo innovador.</p>
+  </div>
+</div>
+
+
+  <!-- SCRIPTS -->
   <script src="js/login_registration.js"></script>
+  <script>
+  </script>
 </body>
 </html>

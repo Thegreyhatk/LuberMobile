@@ -1,0 +1,235 @@
+/* ============================================================
+   css/login_registration.es.css
+   Versión Español — Proyecto Luber
+   ============================================================ */
+
+/* Variables de Tema */
+:root {
+    --color-accent: #007bff;
+    --color-accent-hover: #0056b3;
+    --color-success: #28a745;
+    --color-success-hover: #1e7e34;
+    --color-danger: #dc3545;
+    --color-bg-light: #ffffff;
+    --color-bg-lighter: #f2f2f2;
+    --color-bg-muted: #f0f0f0;
+    --color-text: #222222;
+    --color-text-secondary: #555555;
+    --color-border: #cccccc;
+    --color-border-light: #dddddd;
+    --modal-backdrop: rgba(15, 15, 15, 0.85);
+    --shadow-light: rgba(0, 0, 0, 0.2);
+    --shadow-strong: rgba(0, 0, 0, 0.24);
+  
+    --font-base: 'Segoe UI', Tahoma, sans-serif;
+    --font-size-base: 1rem;
+    --font-size-small: 0.95rem;
+    --line-height: 1.5;
+  
+    --spacing-xs: 6px;
+    --spacing-sm: 10px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+  
+    --border-radius-sm: 4px;
+    --border-radius-md: 6px;
+    --border-radius-lg: 10px;
+    --border-radius-xl: 12px;
+  
+    --transition-fast: 0.2s ease-in-out;
+    --transition-medium: 0.3s ease;
+  }
+  
+  /* Reset y Estilo Base */
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-base);
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    background: var(--color-bg-lighter);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: var(--spacing-lg);
+  }
+  
+  /* Video de Fondo */
+  #background-video {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; opacity: 0.95; z-index: -1;
+  }
+  
+  /* Contenedor de Formularios */
+  .form-container {
+    background: rgba(255,255,255,0.95);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 8px 24px var(--shadow-light);
+    width: 100%; max-width: 500px; overflow: hidden;
+  }
+  
+  /* Logo */
+  .logo-wrapper {
+    text-align: center; padding: var(--spacing-lg) 0 var(--spacing-md);
+  }
+  .logo-wrapper img { max-width: 140px; height: auto; }
+  
+  /* Tabs */
+  .tabs {
+    display: flex; background: var(--color-bg-muted); flex-wrap: wrap;
+  }
+  .tab {
+    flex: 1; text-align: center; padding: var(--spacing-md);
+    cursor: pointer; font-weight: bold; color: var(--color-text-secondary);
+    transition: background var(--transition-medium), color var(--transition-medium);
+  }
+  .tab.active {
+    background: var(--color-bg-light); color: var(--color-text);
+    border-bottom: 2px solid var(--color-accent);
+  }
+  
+  /* Formularios */
+  form {
+    display: none; padding: var(--spacing-lg) var(--spacing-xl);
+  }
+  form.active { display: block; }
+  .field { margin-bottom: var(--spacing-md); }
+  label {
+    display: block; margin-bottom: var(--spacing-xs);
+    color: var(--color-text); font-size: var(--font-size-small);
+  }
+  input, select, button {
+    width: 100%; padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-base); line-height: var(--line-height);
+    background: #fff;
+  }
+  input:focus, select:focus {
+    outline: none; border-color: var(--color-accent);
+  }
+  
+  /* Botón Principal */
+  button {
+    background: var(--color-accent); color: #fff; border: none;
+    cursor: pointer; transition: background var(--transition-medium);
+  }
+  button:hover { background: var(--color-accent-hover); }
+  
+  /* Sección Vehículos */
+  .vehicles h3 {
+    margin: 0 0 var(--spacing-sm); color: var(--color-accent);
+  }
+  .vehicle {
+    position: relative;
+    border: 1px solid var(--color-border-light);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-md);
+    background: var(--color-bg-light);
+  }
+  .remove-btn {
+    position: absolute; top: var(--spacing-sm); right: var(--spacing-sm);
+    background: var(--color-danger); color: #fff; border: none;
+    border-radius: var(--border-radius-sm);
+    width: 24px; height: 24px; font-size: 14px; line-height: 24px;
+    text-align: center; cursor: pointer;
+  }
+  #addVehicleBtn {
+    margin-top: var(--spacing-sm);
+    background: var(--color-success);
+  }
+  #addVehicleBtn:hover { background: var(--color-success-hover); }
+  
+  /* Ícono WhatsLuber */
+  #whatsLuberIcon {
+    width: 36px; height: 36px; margin-left: var(--spacing-md);
+    vertical-align: middle; cursor: pointer;
+    filter: grayscale(40%) brightness(1.2);
+    transition: transform var(--transition-fast), filter var(--transition-fast);
+  }
+  #whatsLuberIcon:hover,
+  #whatsLuberIcon:focus {
+    transform: scale(1.1); filter: none; outline: none;
+  }
+  
+  /* Modal Backdrop */
+  .modal {
+    display: none; position: fixed; inset: 0;
+    background: var(--modal-backdrop);
+    backdrop-filter: blur(4px);
+    z-index: 9999; padding: var(--spacing-md);
+    overflow-y: auto; display: flex;
+    align-items: center; justify-content: center;
+    animation: fadeInBackdrop var(--transition-medium);
+  }
+  
+  /* Modal Content */
+  .modal-content {
+    position: relative;
+    width: 100%; max-width: 440px;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    background: linear-gradient(135deg, var(--color-bg-light), var(--color-bg-lighter));
+    border-radius: var(--border-radius-xl);
+    box-shadow: 0 14px 36px var(--shadow-strong);
+    font-family: var(--font-base); color: var(--color-text);
+    text-align: center; animation: scaleIn var(--transition-medium);
+  }
+  .modal-content h2 {
+    margin: 0 0 var(--spacing-md);
+    font-size: 1.6rem; line-height: 1.2;
+    color: var(--color-accent);
+  }
+  .modal-content p {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height);
+    color: var(--color-text-secondary);
+  }
+  
+  /* Close Button */
+  .modal .close {
+    position: absolute; top: var(--spacing-sm); right: var(--spacing-md);
+    width: 28px; height: 28px; background: transparent; border: none;
+    font-size: 1.4rem; line-height: 1;
+    color: var(--color-text-secondary);
+    cursor: pointer; transition: color var(--transition-fast);
+  }
+  .modal .close:hover,
+  .modal .close:focus {
+    color: var(--color-text); outline: none;
+  }
+  
+  /* Animaciones */
+  @keyframes fadeInBackdrop {
+    from { background: rgba(15,15,15,0); }
+    to   { background: var(--modal-backdrop); }
+  }
+  @keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  
+  /* Responsive */
+  @media (max-width: 480px) {
+    .form-container { padding: 0; border-radius: var(--border-radius-md); }
+    .tabs { flex-direction: column; }
+    .tab { padding: 12px; font-size: var(--font-size-base); }
+    form { padding: 16px 20px; }
+    label { font-size: var(--font-size-small); }
+    input, select, button { font-size: var(--font-size-base); padding: 9px; }
+    .vehicles h3 { font-size: 1.2rem; }
+    #whatsLuberIcon { width: 30px; height: 30px; margin-left: var(--spacing-sm); }
+    .modal-content {
+      max-width: 90%; padding: 24px 20px;
+    }
+    .modal-content h2 { font-size: 1.4rem; }
+    .modal-content p { font-size: var(--font-size-small); }
+    .modal .close {
+      top: 10px; right: 12px; font-size: 1.2rem;
+      width: 24px; height: 24px;
+    }
+  }
+  

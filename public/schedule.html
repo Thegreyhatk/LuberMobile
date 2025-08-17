@@ -1,38 +1,126 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Agendar Cita – Luber</title>
+  <title>Schedule Appointment – Luber</title>
   <link rel="stylesheet" href="/css/schedule.css"/>
+  <style>
+    .help-icon {
+      position: absolute;
+      top: -25px;
+      left: 10px;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+      z-index: 10;
+      filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3));
+      transition: transform 0.2s ease;
+    }
+    .help-icon:hover {
+      transform: scale(1.15);
+    }
+
+    #help-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    #help-modal .help-content {
+      background: #fff;
+      padding: 32px 36px;
+      border-radius: 12px;
+      max-width: 540px;
+      width: 90%;
+      text-align: left;
+      font-size: 1rem;
+      line-height: 1.7;
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+      animation: fadeIn 0.3s ease;
+      color: #2C3E50;
+    }
+
+    #help-modal .help-content h2 {
+      margin: 0 0 16px;
+      font-size: 1.4rem;
+      border-bottom: 2px solid #5DADE2;
+      padding-bottom: 8px;
+    }
+
+    #help-modal .close-help {
+      position: absolute;
+      top: 10px;
+      right: 16px;
+      font-size: 28px;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    #help-modal .close-help:hover {
+      color: #000;
+    }
+
+    #help-modal ol {
+      padding-left: 22px;
+      margin: 0;
+    }
+
+    #help-modal li {
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .main-wrapper {
+      position: relative;
+    }
+  </style>
 </head>
 <body>
   <header style="position: relative; padding-bottom: 48px;">
     <div class="company-logo"></div>
-    <h1>Programar Cita de Servicio</h1>
-    <nav><a href="customer.html">← Mi Cuenta</a></nav>
+    <h1>Schedule Service Appointment</h1>
+    <nav><a href="customer.html">← My Account</a></nav>
   </header>
 
-  <main>
+  <main class="main-wrapper">
+    <!-- Help Icon -->
+    <img src="https://res.cloudinary.com/dsu6g9dym/image/upload/v1751414679/9eb67c48-0907-46b9-bca6-c4e9d0b8a541_vx9vjy.png"
+    alt="Help"
+    class="help-icon"
+    id="open-help"
+    title="How to schedule?"/>
+
     <div id="msg" class=""></div>
+
     <div class="vehicles-table-wrapper">
       <table class="vehicles-table">
         <thead>
           <tr>
-            <th>Vehículo</th>
-            <th>Fecha</th>
-            <th>Horario</th>
-            <th>Servicio</th>
-            <th>Tipo de aceite</th>
-            <th>Precio</th>
+            <th>Vehicle</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Service</th>
+            <th>Oil Type</th>
+            <th>Price</th>
             <th>Extras</th>
-            <th>Dirección</th>
+            <th>Address</th>
           </tr>
         </thead>
         <tbody id="vehicles-tbody"></tbody>
       </table>
       <div style="text-align: right; margin-top: 8px;">
-        <button id="copy-all-btn" style="font-size: 0.9rem;">📍 Copiar dirección a todos</button>
+        <button id="copy-all-btn" style="font-size: 0.9rem;">📍 Copy address to all</button>
         <button id="my-location-btn" style="font-size: 0.9rem; margin-left:8px;">📍 My Location</button>
       </div>
     </div>
@@ -40,17 +128,47 @@
     <div id="total-container">
       Total: $<span id="total-price">0.00</span>
     </div>
-    <!-- Este botón se renombra y reconfigura en js según accountType -->
-    <button id="submit-btn">Agendar y Pagar</button>
+    <button id="submit-btn">Schedule and Pay</button>
     <form id="schedule-form" style="display:none;"></form>
   </main>
 
-  <div id="veh-modal" class="modal" style="display:none;">
-    <span class="close-btn">&times;</span>
-    <img id="veh-modal-img" src="" alt="Vehículo"/>
+  <!-- Help Modal -->
+  <div id="help-modal">
+    <div class="help-content">
+      <span class="close-help">&times;</span>
+      <h2>How to Schedule with Luber:</h2>
+      <ol>
+        <li>You can group multiple vehicles under one schedule for the same day and time.</li>
+        <li>You can also schedule individually to set a custom address per vehicle.</li>
+        <li>You decide which services to include during scheduling (e.g., Engine or Cabin Air Filter).</li>
+        <li>If you want different times for the same day, schedule them one at a time.</li>
+      </ol>
+    </div>
   </div>
 
-  <!-- Apunta al JS modificado -->
+  <!-- Script for Help Modal -->
+  <script>
+    const openHelp = document.getElementById('open-help');
+    const helpModal = document.getElementById('help-modal');
+    const closeHelp = document.querySelector('.close-help');
+
+    openHelp.addEventListener('click', () => {
+      helpModal.style.display = 'flex';
+    });
+
+    closeHelp.addEventListener('click', () => {
+      helpModal.style.display = 'none';
+    });
+
+    helpModal.addEventListener('click', (e) => {
+      if (e.target === helpModal) helpModal.style.display = 'none';
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') helpModal.style.display = 'none';
+    });
+  </script>
+
   <script src="js/schedule.js"></script>
 </body>
 </html>
